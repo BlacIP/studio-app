@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Separator orientation="vertical" className="mr-2 h-4" />
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-base text-white text-xs">SM</span>
-                <span>Studio Manager</span>
+                <span>Studio Workspace</span>
               </div>
             </header>
 

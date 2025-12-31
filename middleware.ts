@@ -3,9 +3,34 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const hostname = request.headers.get('host')?.split(':')[0] || '';
+  const customDomain =
+    process.env.CUSTOM_DOMAIN_BASE || process.env.NEXT_PUBLIC_CUSTOM_DOMAIN_BASE || '';
 
-  // Protect Admin Routes
-  if (path.startsWith('/admin')) {
+  const isReservedPath =
+    path.startsWith('/login') ||
+    path.startsWith('/register') ||
+    path.startsWith('/dashboard') ||
+    path.startsWith('/onboarding') ||
+    path.startsWith('/admin') ||
+    path.startsWith('/settings');
+
+  if (customDomain && hostname.endsWith(`.${customDomain}`)) {
+    const studioSlug = hostname.replace(`.${customDomain}`, '');
+    if (studioSlug && !isReservedPath) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = `/${studioSlug}${path}`;
+      return NextResponse.rewrite(rewriteUrl);
+    }
+  }
+
+  // Protect authenticated studio routes
+  if (
+    path.startsWith('/admin') ||
+    path.startsWith('/dashboard') ||
+    path.startsWith('/onboarding') ||
+    path.startsWith('/settings')
+  ) {
     const token = request.cookies.get('token')?.value;
 
     // Check if token exists
@@ -18,9 +43,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect root to admin (or home later)
+  // Redirect root to login
   if (path === '/') {
-    return NextResponse.redirect(new URL('/admin', request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();

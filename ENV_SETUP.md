@@ -39,6 +39,9 @@ NEXT_PUBLIC_API_REWRITE_DEST=https://studio-api.vercel.app
 - API requests hit `/api/*` on the frontend and are rewritten to the Studio API.
 - `NEXT_PUBLIC_API_URL` is used by the client-side fetch helper.
   - If set, it takes precedence over rewrites.
+- Studio public pages can run in two modes:
+  - Path-based (today): `https://studio-app.vercel.app/{studioSlug}/gallery/{clientSlug}`
+  - Subdomain (later): `https://{studioSlug}.customdomain.com/gallery/{clientSlug}`
 
 ---
 
@@ -52,5 +55,19 @@ NEXT_PUBLIC_API_REWRITE_DEST=https://studio-api.vercel.app
    - Set `NEXT_PUBLIC_API_URL` to your deployed studio-api URL (e.g. `https://studio-api.vercel.app/api`)
    - Set `NEXT_PUBLIC_API_REWRITE_DEST` to the base URL (e.g. `https://studio-api.vercel.app`)
 
-3. **Test**:
+3. **Check Studio API Sync Health**:
+   - Local: `http://localhost:4000/health`
+   - Prod: `https://studio-api.vercel.app/health`
+   - The response includes an `outbox` status block (healthy/degraded).
+
+4. **Custom domain (optional)**:
+   - Set `CUSTOM_DOMAIN_BASE=customdomain.com` in the studio-app deployment.
+   - Set `NEXT_PUBLIC_CUSTOM_DOMAIN_BASE=customdomain.com` so client links use subdomains.
+   - Point a wildcard DNS record (`*.customdomain.com`) to Vercel.
+
+5. **Onboarding flow**:
+   - After register/login, new studios are routed to `/onboarding` to set the studio name and optional contact details.
+   - Completed onboarding redirects to `/dashboard`.
+
+6. **Test**:
    - Run locally: `pnpm dev` → requests should hit the studio API.

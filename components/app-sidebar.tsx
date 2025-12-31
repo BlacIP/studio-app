@@ -5,7 +5,8 @@ import {
   LayoutDashboard,
   Settings,
   HelpCircle,
-  Building2,
+  Users,
+  Image,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -39,22 +40,28 @@ function buildNavData(activePath: string | null): SidebarData {
   return {
     navMain: [
       {
-        title: "Clients",
-        url: "/admin",
+        title: "Dashboard",
+        url: "/dashboard",
         icon: LayoutDashboard,
-        isActive: activePath === "/admin" || activePath?.startsWith("/admin/client") || activePath?.startsWith("/admin/new"),
+        isActive: activePath === "/dashboard",
       },
       {
-        title: "Studios",
-        url: "/admin/studios",
-        icon: Building2,
-        isActive: activePath?.startsWith("/admin/studios"),
+        title: "Clients",
+        url: "/dashboard/clients",
+        icon: Users,
+        isActive: activePath?.startsWith("/dashboard/clients"),
+      },
+      {
+        title: "Galleries",
+        url: "/dashboard/galleries",
+        icon: Image,
+        isActive: activePath?.startsWith("/dashboard/galleries"),
       },
       {
         title: "Settings",
-        url: "/admin/settings",
+        url: "/settings",
         icon: Settings,
-        isActive: activePath?.startsWith("/admin/settings"),
+        isActive: activePath?.startsWith("/settings"),
       },
     ],
     navSecondary: [
@@ -89,7 +96,7 @@ export function AppSidebar({
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Studio Manager</span>
-                  <span className="truncate text-xs text-muted-foreground">Admin</span>
+                  <span className="truncate text-xs text-muted-foreground">Workspace</span>
                 </div>
               </div>
             </SidebarMenuButton>

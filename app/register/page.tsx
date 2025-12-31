@@ -8,23 +8,31 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await api.post('auth/login', {
-        email,
-        password,
-      });
+      const response = await api.post('auth/register', { email, password });
       const nextPath = response?.user?.studioStatus === 'ONBOARDING' ? '/onboarding' : '/dashboard';
       router.push(nextPath);
       router.refresh();
@@ -44,9 +52,9 @@ export default function LoginPage() {
             <div className="flex flex-col gap-6">
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Studio Manager</p>
-                <h1 className="text-2xl font-bold leading-tight">Welcome back</h1>
+                <h1 className="text-2xl font-bold leading-tight">Create your studio account</h1>
                 <p className="text-sm text-muted-foreground">
-                  Sign in to manage client galleries, uploads, and settings.
+                  Start managing clients, uploads, and share links in one place.
                 </p>
               </div>
 
@@ -64,22 +72,26 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                    <a
-                      href="#"
-                      className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:underline"
-                    >
-                      Forgot password?
-                    </a>
-                  </div>
+                  <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    placeholder="••••••••"
+                    placeholder="Create a password"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    placeholder="Re-enter password"
                   />
                 </div>
 
@@ -90,19 +102,15 @@ export default function LoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in…' : 'Sign in'}
+                  {loading ? 'Creating account…' : 'Create account'}
                 </Button>
               </form>
 
               <div className="text-center text-sm text-muted-foreground">
-                New here?{' '}
-                <a className="underline underline-offset-4" href="/register">
-                  Create a studio account
+                Already have an account?{' '}
+                <a className="underline underline-offset-4" href="/login">
+                  Sign in
                 </a>
-              </div>
-
-              <div className="text-center text-sm text-muted-foreground">
-                Having trouble? <a className="underline underline-offset-4" href="mailto:hello@yourstudio.com">Contact support</a>
               </div>
             </div>
           </CardContent>
@@ -114,24 +122,24 @@ export default function LoginPage() {
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Photo Library</p>
               <h2 className="text-3xl font-semibold leading-tight">
-                Curate, deliver, and manage every client gallery in one place.
+                Launch a clean studio workspace in minutes.
               </h2>
               <p className="text-sm text-muted-foreground">
-                Upload sets, generate share links, and keep clients in the loop. Built for studios who want speed and polish.
+                We will guide you through onboarding once you create your account.
               </p>
             </div>
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-primary" />
-                Seamless uploads to Cloudinary
+                Secure studio login with future Google SSO
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-primary" />
-                Client-safe sharing and access control
+                Client-ready share links from day one
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-primary" />
-                Real-time storage insights
+                Upload and organize galleries fast
               </div>
             </div>
           </div>

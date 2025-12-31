@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { RiUserLine, RiLogoutBoxLine, RiSettings4Line } from '@remixicon/react';
+import { RiLogoutBoxLine, RiSettings4Line } from '@remixicon/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 import { api } from '@/lib/api-client';
@@ -43,7 +43,7 @@ export function UserNav() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-strong-950 truncate">
-              {user.name || 'Admin'}
+              {user.name || 'Studio Owner'}
             </p>
             <p className="text-xs text-text-sub-600 truncate">{user.email}</p>
           </div>
@@ -61,21 +61,11 @@ export function UserNav() {
 
           <DropdownMenu.Item className="outline-none">
             <Link
-              href="/admin/profile"
-              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"
-            >
-              <RiUserLine size={16} />
-              My Profile
-            </Link>
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Item className="outline-none">
-            <Link
-              href="/admin/settings"
+              href="/settings"
               className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"
             >
               <RiSettings4Line size={16} />
-              Settings
+              Studio settings
             </Link>
           </DropdownMenu.Item>
 

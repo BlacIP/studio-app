@@ -7,7 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/admin');
+    router.replace('/login');
   }, [router]);
 
   return <div className="flex h-screen items-center justify-center">Redirecting...</div>;
