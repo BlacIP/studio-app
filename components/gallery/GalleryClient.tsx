@@ -11,6 +11,7 @@ interface Photo {
 
 interface GalleryClientProps {
   photos: Photo[];
+  downloadUrl?: string;
 }
 
 // Helper to get optimized Cloudinary URL for display
@@ -35,7 +36,7 @@ const getDownloadUrl = (url: string, filename: string) => {
   return url;
 };
 
-export default function GalleryClient({ photos }: GalleryClientProps) {
+export default function GalleryClient({ photos, downloadUrl }: GalleryClientProps) {
   const [lightbox, setLightbox] = useState<{ open: boolean; url: string; filename: string } | null>(null);
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -45,9 +46,10 @@ export default function GalleryClient({ photos }: GalleryClientProps) {
   const handleDownloadAll = async () => {
     setIsDownloading(true);
     try {
-      // Get slug from URL
       const slug = window.location.pathname.split('/').pop();
-      const response = await fetch(`/api/gallery/${slug}/download`);
+      const fallbackUrl = slug ? `/api/gallery/${slug}/download` : '/api/gallery/download';
+      const downloadHref = downloadUrl || fallbackUrl;
+      const response = await fetch(downloadHref);
 
       if (!response.ok) {
         throw new Error('Download failed');
@@ -55,13 +57,13 @@ export default function GalleryClient({ photos }: GalleryClientProps) {
 
       // Get the blob and create download link
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const objectUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = objectUrl;
       a.download = `Gallery.zip`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(objectUrl);
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);

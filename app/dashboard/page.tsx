@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
+import { buildStudioBaseUrl } from '@/lib/studio-url';
 
 export default function Page() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [studioSlug, setStudioSlug] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -18,6 +20,7 @@ export default function Page() {
           router.replace('/onboarding');
           return;
         }
+        setStudioSlug(studio?.slug || '');
         setReady(true);
       } catch (err) {
         console.error(err);
@@ -38,6 +41,8 @@ export default function Page() {
     );
   }
 
+  const publicUrl = studioSlug ? buildStudioBaseUrl(studioSlug) : '';
+
   return (
     <div className="px-6 py-10">
       <h1 className="text-2xl font-semibold text-text-strong-950">Studio dashboard</h1>
@@ -48,6 +53,16 @@ export default function Page() {
         <a className="text-sm font-medium text-primary underline-offset-4 hover:underline" href="/settings">
           Update studio settings
         </a>
+        {publicUrl && (
+          <a
+            className="ml-4 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View public studio page
+          </a>
+        )}
       </div>
     </div>
   );

@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadStudioLogo } from '@/lib/logo-upload';
+import { buildStudioBaseUrl } from '@/lib/studio-url';
 
 type StudioResponse = {
   name: string | null;
   slug: string | null;
   status: string;
   logo_url?: string | null;
+  logo_public_id?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
   address?: string | null;
@@ -37,6 +39,7 @@ export default function StudioSettingsPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [logoPublicId, setLogoPublicId] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoRemoving, setLogoRemoving] = useState(false);
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -56,6 +59,7 @@ export default function StudioSettingsPage() {
         setName(studio.name || '');
         setSlug(studio.slug || '');
         setLogoUrl(studio.logo_url || '');
+        setLogoPublicId(studio.logo_public_id || '');
         setContactEmail(studio.contact_email || '');
         setContactPhone(studio.contact_phone || '');
         setAddress(studio.address || '');
@@ -114,6 +118,40 @@ export default function StudioSettingsPage() {
     }
   };
 
+  const handleRemoveLogo = async () => {
+    if (!logoUrl) return;
+    setLogoRemoving(true);
+    setError('');
+    setMessage('');
+    try {
+      const payload: Record<string, any> = {
+        name: name.trim(),
+        slug: slug.trim() || undefined,
+        clear_logo: true,
+      };
+      const socialLinks = compactRecord({
+        instagram,
+        facebook,
+        x: xSocial,
+        tiktok,
+      });
+      if (socialLinks) payload.social_links = socialLinks;
+      if (contactEmail.trim()) payload.contact_email = contactEmail.trim();
+      if (contactPhone.trim()) payload.contact_phone = contactPhone.trim();
+      if (address.trim()) payload.address = address.trim();
+
+      await api.patch('studios/me', payload);
+      setLogoUrl('');
+      setLogoPublicId('');
+      setMessage('Logo removed.');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Unable to remove logo.');
+    } finally {
+      setLogoRemoving(false);
+    }
+  };
+
   if (!ready) {
     return (
       <div className="px-6 py-10 text-sm text-text-sub-600">
@@ -126,11 +164,20 @@ export default function StudioSettingsPage() {
     <div className="min-h-screen bg-bg-weak-50 px-6 py-10 text-text-strong-950">
       <div className="mx-auto w-full max-w-4xl space-y-6">
         <Card className="border border-stroke-soft-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Studio settings</CardTitle>
-            <CardDescription>
-              Update your branding and contact details. Changes appear on public galleries.
-            </CardDescription>
+          <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle className="text-2xl">Studio settings</CardTitle>
+              <CardDescription>
+                Update your branding and contact details. Changes appear on public galleries.
+              </CardDescription>
+            </div>
+            {slug && (
+              <Button variant="outline" asChild>
+                <a href={buildStudioBaseUrl(slug)} target="_blank" rel="noreferrer">
+                  View public profile
+                </a>
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
@@ -175,10 +222,18 @@ export default function StudioSettingsPage() {
                 <p className="text-xs text-text-sub-600">Uploading logo...</p>
               )}
               {logoUrl && (
-                <div className="flex items-center gap-3 text-xs text-text-sub-600">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-text-sub-600">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={logoUrl} alt="Studio logo preview" className="h-10 w-10 rounded-full object-cover" />
                   <span>Logo uploaded. Save changes to apply it.</span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    disabled={logoRemoving}
+                    className="text-xs font-medium text-error-base hover:underline disabled:opacity-60"
+                  >
+                    {logoRemoving ? 'Removing...' : 'Remove logo'}
+                  </button>
                 </div>
               )}
             </div>
