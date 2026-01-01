@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/onboarding') ||
     path.startsWith('/settings')
   ) {
-    const token = request.cookies.get('token')?.value;
+    const token = request.cookies.get('studio_token')?.value;
 
     // Check if token exists
     if (!token) {

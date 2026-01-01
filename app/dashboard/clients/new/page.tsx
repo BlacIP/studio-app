@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSWRConfig } from 'swr';
 import { RiCalendarLine, RiUser3Line } from '@remixicon/react';
 import { api } from '@/lib/api-client';
 
 export default function NewClientPage() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -47,6 +49,7 @@ export default function NewClientPage() {
       };
 
       const client = await api.post('clients', payload);
+      await mutate('clients');
       router.push(`/dashboard/clients/${client.id}`);
     } catch (err) {
       console.error(err);

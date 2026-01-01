@@ -2,8 +2,9 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { format } from 'date-fns';
+import useSWR from 'swr';
 import { RiUploadCloud2Line, RiShareBoxLine, RiDownloadLine, RiCheckLine, RiLoader4Line, RiStarLine, RiDeleteBinLine, RiCloseLine, RiMoreLine, RiEdit2Line, RiArchiveLine } from '@remixicon/react';
 import * as Modal from '@/components/ui/modal';
 import * as ProgressBar from '@/components/ui/progress-bar';
@@ -11,6 +12,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 import { api } from '@/lib/api-client';
 import { buildStudioGalleryUrl } from '@/lib/studio-url';
+import { useStudio } from '@/lib/hooks/use-studio';
 
 interface Photo {
     id: string;
@@ -31,13 +33,22 @@ interface Client {
     header_media_type?: 'image' | 'video';
 }
 
+type ClientResponse = {
+    client: Client;
+    photos: Photo[];
+};
+
 
 
 export default function ClientDetailPage() {
     const params = useParams();
     const id = params.id as string;
     const [client, setClient] = useState<Client | null>(null);
-    const [studioSlug, setStudioSlug] = useState('');
+    const { data, error, isLoading, mutate } = useSWR<ClientResponse>(
+        id ? `clients/${id}` : null,
+    );
+    const { data: studio } = useStudio();
+    const studioSlug = studio?.slug || '';
 
     // Upload State
     const [uploading, setUploading] = useState(false);
@@ -83,6 +94,7 @@ export default function ClientDetailPage() {
             try {
                 await api.put(`clients/${id}`, { status: newStatus });
                 setClient({ ...client, status: newStatus as any });
+                await mutate();
                 if (newStatus === 'DELETED') {
                     showAlert('Success', 'Client deleted (Soft Delete). Public link is now disabled.');
                 }
@@ -104,6 +116,7 @@ export default function ClientDetailPage() {
         try {
             await api.put(`clients/${id}`, { name: editName, subheading: editSubheading, event_date: editDate });
             setClient(prev => prev ? ({ ...prev, name: editName, subheading: editSubheading, event_date: editDate }) : null);
+            await mutate();
             setEditing(false);
         } catch {
             showAlert('Error', 'Failed to update client');
@@ -122,42 +135,20 @@ export default function ClientDetailPage() {
         }
     };
 
-    // Fetch client details
-    const fetchClient = useCallback(async () => {
-        try {
-            const data = await api.get(`clients/${id}`);
-            setClient({ ...data.client, photos: data.photos });
-            if (data.client.header_media_url) {
-                setHeaderMedia({
-                    url: data.client.header_media_url,
-                    type: data.client.header_media_type || 'image'
-                });
-            }
-        } catch (err: any) {
-            console.error(err);
+    useEffect(() => {
+        if (!data) return;
+        setClient({ ...data.client, photos: data.photos });
+        if (data.client.header_media_url) {
+            setHeaderMedia({
+                url: data.client.header_media_url,
+                type: data.client.header_media_type || 'image',
+            });
+        } else {
+            setHeaderMedia({ url: null, type: null });
         }
-    }, [id]);
+    }, [data]);
 
-    // Fetch client details on component mount and id change
-    useEffect(() => {
-        fetchClient();
-    }, [fetchClient]);
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                const studio = await api.get('studios/me');
-                if (!cancelled) setStudioSlug(studio?.slug || '');
-            } catch (err) {
-                console.error(err);
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    // studio slug comes from shared SWR cache
 
     const removeHeaderMedia = async () => {
         showConfirm('Remove Header?', 'Are you sure you want to remove the header media?', async () => {
@@ -168,6 +159,7 @@ export default function ClientDetailPage() {
                     header_media_type: null
                 });
                 setHeaderMedia({ url: null, type: null });
+                await mutate();
             } catch {
                 showAlert('Error', 'Failed to remove header');
             } finally {
@@ -198,16 +190,35 @@ export default function ClientDetailPage() {
             setProgress(0);
             setUploading(true);
 
-            // Batch processing helper
             const BATCH_SIZE = 3;
+            const SAVE_BATCH_SIZE = 20;
+            const SAVE_RETRY_DELAY_MS = 800;
+
+            const saveBatchWithRetry = async (records: any[]) => {
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    try {
+                        return await api.post('photos/save-records', { clientId: id, photos: records });
+                    } catch (err) {
+                        if (attempt === 2) throw err;
+                        await new Promise((resolve) => setTimeout(resolve, SAVE_RETRY_DELAY_MS));
+                    }
+                }
+            };
+
             const processBatch = async (files: File[]) => {
                 for (let i = 0; i < files.length; i += BATCH_SIZE) {
                     const chunk = files.slice(i, i + BATCH_SIZE);
+                    const signaturePayload = await api.post('photos/upload-signature', { clientId: id });
+                    const timestamp = signaturePayload.timestamp;
+                    const signature = signaturePayload.signature;
+                    const folder = signaturePayload.folder;
+                    const cloudName = signaturePayload.cloudName || signaturePayload.cloud_name;
+                    const apiKey = signaturePayload.apiKey || signaturePayload.api_key;
+
+                    const uploadedRecords: any[] = [];
+
                     await Promise.all(chunk.map(async (file) => {
                         try {
-                            // Step 1: Get upload signature from server
-                            const { timestamp, signature, folder, cloud_name: cloudName, api_key: apiKey } = await api.post('photos/upload-signature', { clientId: id });
-
                             // Step 2: Upload directly to Cloudinary
                             const formData = new FormData();
                             formData.append('file', file);
@@ -226,15 +237,15 @@ export default function ClientDetailPage() {
                             }
 
                             const uploadData = await uploadRes.json();
-
-                            // Step 3: Save photo record to database
-                            await api.post('photos/save-record', {
-                                clientId: id,
+                            uploadedRecords.push({
                                 publicId: uploadData.public_id,
                                 url: uploadData.secure_url,
+                                bytes: uploadData.bytes,
+                                width: uploadData.width,
+                                height: uploadData.height,
+                                format: uploadData.format,
+                                resourceType: uploadData.resource_type,
                             });
-
-
                         } catch (err: any) {
                             console.error('Upload failed for', file.name, err);
                             errors.push(`${file.name}: ${err.message}`);
@@ -242,6 +253,16 @@ export default function ClientDetailPage() {
                             setProgress((prev) => prev + 1);
                         }
                     }));
+
+                    for (let j = 0; j < uploadedRecords.length; j += SAVE_BATCH_SIZE) {
+                        const batch = uploadedRecords.slice(j, j + SAVE_BATCH_SIZE);
+                        try {
+                            await saveBatchWithRetry(batch);
+                        } catch (err: any) {
+                            console.error('Save records failed', err);
+                            errors.push(`Metadata save failed for ${batch.length} file(s). Please retry.`);
+                        }
+                    }
                 }
                 return errors;
             };
@@ -254,7 +275,7 @@ export default function ClientDetailPage() {
                     showAlert('Upload Completed with Errors', errorMsg);
                 }
                 // Auto-refresh data after all uploads complete
-                await fetchClient();
+                await mutate();
             } catch (error) {
                 console.error("Batch upload error", error);
             } finally {
@@ -337,7 +358,9 @@ export default function ClientDetailPage() {
         return url;
     };
 
-    if (!client) return <div className="p-8 text-center">Loading...</div>;
+    if (isLoading && !client) return <div className="p-8 text-center">Loading...</div>;
+    if (error && !client) return <div className="p-8 text-center">Failed to load client.</div>;
+    if (!client) return <div className="p-8 text-center">Client not found.</div>;
 
     const publicUrl = client && studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
 

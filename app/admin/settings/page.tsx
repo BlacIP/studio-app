@@ -5,6 +5,7 @@ import { RiAddLine, RiUserLine, RiShieldUserLine, RiCheckLine, RiEdit2Line, RiHa
 import * as Modal from '@/components/ui/modal';
 import { api } from '@/lib/api-client';
 import ProfilePage from '../profile/page'; // Reuse existing Profile Page logic
+import { useSession } from '@/lib/hooks/use-session';
 
 interface User {
     id: string;
@@ -17,6 +18,7 @@ interface User {
 }
 
 export default function SettingsPage() {
+    const { data: session } = useSession();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'storage' | 'archive' | 'recycle'>('profile');
@@ -45,15 +47,6 @@ export default function SettingsPage() {
         { id: 'manage_clients', label: 'Manage Clients (Create, Edit, Delete)' },
         { id: 'manage_photos', label: 'Manage Photos (Upload, Delete)' },
     ];
-
-    const fetchCurrentUser = async () => {
-        try {
-            const data = await api.get('auth/me');
-            setCurrentUser(data);
-        } catch (e) {
-            console.error(e);
-        }
-    };
 
     const fetchUsers = async () => {
         try {
@@ -124,11 +117,11 @@ export default function SettingsPage() {
     };
 
     useEffect(() => {
-        fetchCurrentUser().then(() => {
-            fetchUsers();
-            fetchClients();
-        });
-    }, []);
+        if (!session) return;
+        setCurrentUser(session as User);
+        fetchUsers();
+        fetchClients();
+    }, [session]);
 
     useEffect(() => {
         if (activeTab === 'storage') fetchStorage();

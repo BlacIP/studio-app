@@ -2,38 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api-client';
 import { buildStudioBaseUrl } from '@/lib/studio-url';
+import { useStudio } from '@/lib/hooks/use-studio';
 
 export default function Page() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const { data: studio, error: studioError, isValidating } = useStudio();
   const [studioSlug, setStudioSlug] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const studio = await api.get('studios/me');
-        if (cancelled) return;
-        if (studio?.status === 'ONBOARDING') {
-          router.replace('/onboarding');
-          return;
-        }
-        setStudioSlug(studio?.slug || '');
-        setReady(true);
-      } catch (err) {
-        console.error(err);
-        router.replace('/login');
-      }
-    })();
+    if (studioError) {
+      router.replace('/login');
+      return;
+    }
+    if (!studio) {
+      return;
+    }
+    if (studio.status === 'ONBOARDING') {
+      router.replace('/onboarding');
+      return;
+    }
+    setStudioSlug(studio.slug || '');
+  }, [router, studio, studioError]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
-
-  if (!ready) {
+  if (!studio && isValidating) {
     return (
       <div className="px-6 py-10 text-sm text-text-sub-600">
         Loading your studio workspace...

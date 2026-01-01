@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -9,18 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadStudioLogo } from '@/lib/logo-upload';
 import { buildStudioBaseUrl } from '@/lib/studio-url';
-
-type StudioResponse = {
-  name: string | null;
-  slug: string | null;
-  status: string;
-  logo_url?: string | null;
-  logo_public_id?: string | null;
-  contact_email?: string | null;
-  contact_phone?: string | null;
-  address?: string | null;
-  social_links?: Record<string, string> | null;
-};
+import { useStudio } from '@/lib/hooks/use-studio';
 
 function compactRecord(record: Record<string, string>) {
   const entries = Object.entries(record)
@@ -32,8 +21,9 @@ function compactRecord(record: Record<string, string>) {
 
 export default function StudioSettingsPage() {
   const router = useRouter();
+  const { data: studio, error: studioError, isValidating } = useStudio();
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
+  const didInit = useRef(false);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -51,33 +41,24 @@ export default function StudioSettingsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const studio = (await api.get('studios/me')) as StudioResponse;
-        if (cancelled) return;
-        setName(studio.name || '');
-        setSlug(studio.slug || '');
-        setLogoUrl(studio.logo_url || '');
-        setLogoPublicId(studio.logo_public_id || '');
-        setContactEmail(studio.contact_email || '');
-        setContactPhone(studio.contact_phone || '');
-        setAddress(studio.address || '');
-        setInstagram(studio.social_links?.instagram || '');
-        setFacebook(studio.social_links?.facebook || '');
-        setXSocial(studio.social_links?.x || '');
-        setTiktok(studio.social_links?.tiktok || '');
-        setReady(true);
-      } catch (err) {
-        console.error(err);
-        router.replace('/login');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    if (studioError) {
+      router.replace('/login');
+      return;
+    }
+    if (!studio || didInit.current) return;
+    setName(studio.name || '');
+    setSlug(studio.slug || '');
+    setLogoUrl(studio.logo_url || '');
+    setLogoPublicId(studio.logo_public_id || '');
+    setContactEmail(studio.contact_email || '');
+    setContactPhone(studio.contact_phone || '');
+    setAddress(studio.address || '');
+    setInstagram(studio.social_links?.instagram || '');
+    setFacebook(studio.social_links?.facebook || '');
+    setXSocial(studio.social_links?.x || '');
+    setTiktok(studio.social_links?.tiktok || '');
+    didInit.current = true;
+  }, [router, studio, studioError]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -152,12 +133,15 @@ export default function StudioSettingsPage() {
     }
   };
 
-  if (!ready) {
+  if (!studio && isValidating) {
     return (
       <div className="px-6 py-10 text-sm text-text-sub-600">
         Loading studio settings...
       </div>
     );
+  }
+  if (!studio) {
+    return <div className="px-6 py-10 text-sm text-text-sub-600">Studio not found.</div>;
   }
 
   return (

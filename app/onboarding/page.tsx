@@ -8,18 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadStudioLogo } from '@/lib/logo-upload';
-
-type StudioResponse = {
-  id: string;
-  name: string | null;
-  slug: string | null;
-  status: string;
-  logo_url?: string | null;
-  contact_email?: string | null;
-  contact_phone?: string | null;
-  address?: string | null;
-  social_links?: Record<string, string> | null;
-};
+import { useStudio } from '@/lib/hooks/use-studio';
+import SessionGuard from '@/components/session-guard';
 
 const steps = [
   { id: 1, title: 'Studio basics', description: 'Tell us the essentials.' },
@@ -35,7 +25,17 @@ function compactRecord(record: Record<string, string>) {
 }
 
 export default function OnboardingPage() {
+  return (
+    <>
+      <SessionGuard />
+      <OnboardingContent />
+    </>
+  );
+}
+
+function OnboardingContent() {
   const router = useRouter();
+  const { data: studio, error: studioError } = useStudio();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [studioName, setStudioName] = useState('');
@@ -52,35 +52,26 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const studio = (await api.get('studios/me')) as StudioResponse;
-        if (cancelled) return;
-        if (studio.status === 'ACTIVE') {
-          router.replace('/dashboard');
-          return;
-        }
+    if (studioError) {
+      router.replace('/login');
+      return;
+    }
+    if (!studio) return;
+    if (studio.status === 'ACTIVE') {
+      router.replace('/dashboard');
+      return;
+    }
 
-        setStudioName(studio.name && studio.name !== 'Untitled Studio' ? studio.name : '');
-        setLogoUrl(studio.logo_url || '');
-        setContactEmail(studio.contact_email || '');
-        setContactPhone(studio.contact_phone || '');
-        setAddress(studio.address || '');
-        setInstagram(studio.social_links?.instagram || '');
-        setFacebook(studio.social_links?.facebook || '');
-        setXSocial(studio.social_links?.x || '');
-        setTiktok(studio.social_links?.tiktok || '');
-      } catch (err) {
-        console.error(err);
-        router.replace('/login');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    setStudioName(studio.name && studio.name !== 'Untitled Studio' ? studio.name : '');
+    setLogoUrl(studio.logo_url || '');
+    setContactEmail(studio.contact_email || '');
+    setContactPhone(studio.contact_phone || '');
+    setAddress(studio.address || '');
+    setInstagram(studio.social_links?.instagram || '');
+    setFacebook(studio.social_links?.facebook || '');
+    setXSocial(studio.social_links?.x || '');
+    setTiktok(studio.social_links?.tiktok || '');
+  }, [router, studio, studioError]);
 
   const progress = useMemo(() => `${step} / ${steps.length}`, [step]);
 

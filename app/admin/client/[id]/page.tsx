@@ -180,16 +180,35 @@ export default function ClientDetailPage() {
             setProgress(0);
             setUploading(true);
 
-            // Batch processing helper
             const BATCH_SIZE = 3;
+            const SAVE_BATCH_SIZE = 20;
+            const SAVE_RETRY_DELAY_MS = 800;
+
+            const saveBatchWithRetry = async (records: any[]) => {
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    try {
+                        return await api.post('admin/legacy/photos/save-records', { clientId: id, photos: records });
+                    } catch (err) {
+                        if (attempt === 2) throw err;
+                        await new Promise((resolve) => setTimeout(resolve, SAVE_RETRY_DELAY_MS));
+                    }
+                }
+            };
+
             const processBatch = async (files: File[]) => {
                 for (let i = 0; i < files.length; i += BATCH_SIZE) {
                     const chunk = files.slice(i, i + BATCH_SIZE);
+                    const signaturePayload = await api.post('admin/legacy/photos/upload-signature', { clientId: id });
+                    const timestamp = signaturePayload.timestamp;
+                    const signature = signaturePayload.signature;
+                    const folder = signaturePayload.folder;
+                    const cloudName = signaturePayload.cloudName || signaturePayload.cloud_name;
+                    const apiKey = signaturePayload.apiKey || signaturePayload.api_key;
+
+                    const uploadedRecords: any[] = [];
+
                     await Promise.all(chunk.map(async (file) => {
                         try {
-                            // Step 1: Get upload signature from server
-                            const { timestamp, signature, folder, cloud_name: cloudName, api_key: apiKey } = await api.post('admin/legacy/photos/upload-signature', { clientId: id });
-
                             // Step 2: Upload directly to Cloudinary
                             const formData = new FormData();
                             formData.append('file', file);
@@ -208,15 +227,15 @@ export default function ClientDetailPage() {
                             }
 
                             const uploadData = await uploadRes.json();
-
-                            // Step 3: Save photo record to database
-                            await api.post('admin/legacy/photos/save-record', {
-                                clientId: id,
+                            uploadedRecords.push({
                                 publicId: uploadData.public_id,
                                 url: uploadData.secure_url,
+                                bytes: uploadData.bytes,
+                                width: uploadData.width,
+                                height: uploadData.height,
+                                format: uploadData.format,
+                                resourceType: uploadData.resource_type,
                             });
-
-
                         } catch (err: any) {
                             console.error('Upload failed for', file.name, err);
                             errors.push(`${file.name}: ${err.message}`);
@@ -224,6 +243,16 @@ export default function ClientDetailPage() {
                             setProgress((prev) => prev + 1);
                         }
                     }));
+
+                    for (let j = 0; j < uploadedRecords.length; j += SAVE_BATCH_SIZE) {
+                        const batch = uploadedRecords.slice(j, j + SAVE_BATCH_SIZE);
+                        try {
+                            await saveBatchWithRetry(batch);
+                        } catch (err: any) {
+                            console.error('Save records failed', err);
+                            errors.push(`Metadata save failed for ${batch.length} file(s). Please retry.`);
+                        }
+                    }
                 }
                 return errors;
             };

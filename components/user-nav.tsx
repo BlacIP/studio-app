@@ -1,26 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RiLogoutBoxLine, RiSettings4Line } from '@remixicon/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 import { api } from '@/lib/api-client';
+import { useSession, clearSessionCache } from '@/lib/hooks/use-session';
+import { clearStudioCache } from '@/lib/hooks/use-studio';
+import { clearClientsCache } from '@/lib/hooks/use-clients';
 
 export function UserNav() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { data: user } = useSession();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    api.get('auth/me')
-      .then(data => setUser(data))
-      .catch(() => { });
+    setMounted(true);
   }, []);
 
   const handleLogout = async () => {
     try {
       await api.post('auth/logout');
+      clearSessionCache();
+      clearStudioCache();
+      clearClientsCache();
       router.push('/login');
       router.refresh();
     } catch (err) {
@@ -28,7 +33,7 @@ export function UserNav() {
     }
   };
 
-  if (!user) return null; // Or placeholder skeleton
+  if (!mounted || !user) return null; // Avoid hydration mismatch
 
   const initials = user.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()

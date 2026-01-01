@@ -1,46 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { api } from '@/lib/api-client';
 import { RiArrowRightLine, RiImageLine, RiUser3Line } from '@remixicon/react';
-
-type Client = {
-  id: string;
-  name: string;
-  slug: string;
-  event_date: string;
-  photo_count?: number | string;
-  status?: string;
-};
+import { useClients } from '@/lib/hooks/use-clients';
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.get('clients');
-        if (cancelled) return;
-        setClients(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        console.error(err);
-        if (!cancelled) {
-          setError(err.message || 'Unable to load clients.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: clients, error, isValidating } = useClients();
+  const loading = !clients && !error && isValidating;
 
   if (loading) {
     return <div className="p-8 text-center text-text-sub-600">Loading clients...</div>;
@@ -65,9 +32,9 @@ export default function ClientsPage() {
 
       {error ? (
         <div className="rounded-lg border border-error-base/30 bg-error-base/10 px-4 py-3 text-sm text-error-base">
-          {error}
+          {error.message || 'Unable to load clients.'}
         </div>
-      ) : clients.length === 0 ? (
+      ) : (clients || []).length === 0 ? (
         <div className="rounded-xl border border-dashed border-stroke-soft-200 bg-bg-white-0 p-12 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bg-weak-50">
             <RiUser3Line className="text-text-sub-600" />
@@ -85,7 +52,7 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {clients.map((client) => {
+          {(clients || []).map((client) => {
             const photoCount = Number(client.photo_count || 0);
             return (
               <Link

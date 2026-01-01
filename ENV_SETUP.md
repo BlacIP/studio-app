@@ -60,14 +60,22 @@ NEXT_PUBLIC_API_REWRITE_DEST=https://studio-api.vercel.app
    - Prod: `https://studio-api.vercel.app/health`
    - The response includes an `outbox` status block (healthy/degraded).
 
-4. **Custom domain (optional)**:
+4. **External scheduler (cron-job.org)**:
+   - Create a new cron job that calls:
+     - Prod: `https://studio-api.vercel.app/api/internal/outbox/process-if-needed`
+     - Local (for testing): `http://localhost:4000/api/internal/outbox/process-if-needed`
+   - Add request header: `x-admin-sync-secret: <ADMIN_SYNC_SECRET>`
+   - Suggested interval: every 10–15 minutes.
+   - Optional status check (same header): `https://studio-api.vercel.app/api/internal/outbox/status`
+
+5. **Custom domain (optional)**:
    - Set `CUSTOM_DOMAIN_BASE=customdomain.com` in the studio-app deployment.
    - Set `NEXT_PUBLIC_CUSTOM_DOMAIN_BASE=customdomain.com` so client links use subdomains.
    - Point a wildcard DNS record (`*.customdomain.com`) to Vercel.
 
-5. **Onboarding flow**:
+6. **Onboarding flow**:
    - After register/login, new studios are routed to `/onboarding` to set the studio name and optional contact details.
    - Completed onboarding redirects to `/dashboard`.
 
-6. **Test**:
+7. **Test**:
    - Run locally: `pnpm dev` → requests should hit the studio API.

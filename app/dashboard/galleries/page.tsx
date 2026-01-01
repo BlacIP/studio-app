@@ -1,50 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
-import { api } from '@/lib/api-client';
 import { buildStudioGalleryUrl } from '@/lib/studio-url';
+import { useStudio } from '@/lib/hooks/use-studio';
+import { useClients } from '@/lib/hooks/use-clients';
 import { RiExternalLinkLine, RiImageLine, RiLinkM } from '@remixicon/react';
 
-type Client = {
-  id: string;
-  name: string;
-  slug: string;
-  event_date: string;
-  photo_count?: number | string;
-  status?: string;
-};
-
 export default function GalleriesPage() {
-  const [studioSlug, setStudioSlug] = useState('');
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: studio, error: studioError, isValidating: studioValidating } = useStudio();
+  const { data: clients, error: clientsError, isValidating: clientsValidating } = useClients();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [studio, clientList] = await Promise.all([
-          api.get('studios/me'),
-          api.get('clients'),
-        ]);
-        if (cancelled) return;
-        setStudioSlug(studio?.slug || '');
-        setClients(Array.isArray(clientList) ? clientList : []);
-      } catch (err: any) {
-        console.error(err);
-        if (!cancelled) setError(err.message || 'Unable to load galleries.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const studioSlug = studio?.slug || '';
+  const error = studioError || clientsError ? (studioError || clientsError)?.message || 'Unable to load galleries.' : '';
+  const loading = !clients && !clientsError && clientsValidating;
 
   const handleCopy = async (url: string, id: string) => {
     try {
@@ -56,7 +25,7 @@ export default function GalleriesPage() {
     }
   };
 
-  if (loading) {
+  if (loading || (!studio && !studioError && studioValidating)) {
     return <div className="p-8 text-center text-text-sub-600">Loading galleries...</div>;
   }
 
@@ -73,7 +42,7 @@ export default function GalleriesPage() {
         <div className="rounded-lg border border-error-base/30 bg-error-base/10 px-4 py-3 text-sm text-error-base">
           {error}
         </div>
-      ) : clients.length === 0 ? (
+      ) : (clients || []).length === 0 ? (
         <div className="rounded-xl border border-dashed border-stroke-soft-200 bg-bg-white-0 p-12 text-center">
           <h3 className="text-lg font-semibold text-text-strong-950">No galleries yet</h3>
           <p className="mt-1 text-sm text-text-sub-600">
@@ -82,7 +51,7 @@ export default function GalleriesPage() {
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {clients.map((client) => {
+          {(clients || []).map((client) => {
             const galleryUrl = studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
             const photoCount = Number(client.photo_count || 0);
             return (
