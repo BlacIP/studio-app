@@ -6,17 +6,20 @@ import useSWR from 'swr';
 export type SessionUser = {
   id: string;
   email: string;
+  name?: string;
   role?: string;
   permissions?: string[];
   studioId?: string;
   studioSlug?: string;
   studioName?: string;
   studioStatus?: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
   display_name?: string | null;
   avatar_url?: string | null;
 };
 
-const SESSION_CACHE_KEY = 'studio_app_session_v1';
+export const SESSION_CACHE_KEY = 'studio_app_session_v1';
 let sessionCache: SessionUser | null = null;
 
 function readSessionCache(): SessionUser | null {

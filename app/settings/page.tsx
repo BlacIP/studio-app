@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { uploadStudioLogo } from '@/lib/logo-upload';
 import { buildStudioBaseUrl } from '@/lib/studio-url';
 import { useStudio } from '@/lib/hooks/use-studio';
+import { useSession } from '@/lib/hooks/use-session';
 
 function compactRecord(record: Record<string, string>) {
   const entries = Object.entries(record)
@@ -21,9 +22,11 @@ function compactRecord(record: Record<string, string>) {
 
 export default function StudioSettingsPage() {
   const router = useRouter();
+  const { data: session, error: sessionError, mutate: mutateSession } = useSession();
   const { data: studio, error: studioError, isValidating } = useStudio();
   const [loading, setLoading] = useState(false);
   const didInit = useRef(false);
+  const ownerDidInit = useRef(false);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -37,6 +40,7 @@ export default function StudioSettingsPage() {
   const [facebook, setFacebook] = useState('');
   const [xSocial, setXSocial] = useState('');
   const [tiktok, setTiktok] = useState('');
+  const [ownerName, setOwnerName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -59,6 +63,13 @@ export default function StudioSettingsPage() {
     setTiktok(studio.social_links?.tiktok || '');
     didInit.current = true;
   }, [router, studio, studioError]);
+
+  useEffect(() => {
+    if (sessionError) return;
+    if (!session || ownerDidInit.current) return;
+    setOwnerName(session.displayName || session.name || '');
+    ownerDidInit.current = true;
+  }, [session, sessionError]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -88,6 +99,15 @@ export default function StudioSettingsPage() {
         tiktok,
       });
       if (socialLinks) payload.social_links = socialLinks;
+
+      const trimmedOwnerName = ownerName.trim();
+      const currentOwnerName = session?.displayName || session?.name || '';
+      if (trimmedOwnerName && trimmedOwnerName !== currentOwnerName) {
+        const userResponse = await api.patch('auth/me', { displayName: trimmedOwnerName });
+        if (userResponse?.user) {
+          mutateSession(userResponse.user, false);
+        }
+      }
 
       await api.patch('studios/me', payload);
       setMessage('Studio settings updated.');
@@ -174,6 +194,21 @@ export default function StudioSettingsPage() {
                 <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
                 <p className="text-xs text-text-sub-600">
                   Changing the slug updates your public URL.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="ownerName">Owner name</Label>
+                <Input
+                  id="ownerName"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  placeholder="Studio owner name"
+                />
+                <p className="text-xs text-text-sub-600">
+                  This is shown in your account menu and admin records.
                 </p>
               </div>
             </div>

@@ -15,6 +15,9 @@ NODE_ENV=development
 # Studio API
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
 NEXT_PUBLIC_API_REWRITE_DEST=http://localhost:4000
+
+# Google Auth (local-only)
+NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true
 ```
 
 ---
@@ -30,6 +33,9 @@ NODE_ENV=production
 # Studio API
 NEXT_PUBLIC_API_URL=https://studio-api.vercel.app/api
 NEXT_PUBLIC_API_REWRITE_DEST=https://studio-api.vercel.app
+
+# Google Auth (disabled in prod for now)
+NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=false
 ```
 
 ---

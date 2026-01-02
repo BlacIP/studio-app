@@ -10,11 +10,13 @@ import { Label } from '@/components/ui/label';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +32,14 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!fullName.trim()) {
+      setError('Full name is required.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await api.post('auth/register', { email, password });
+      const response = await api.post('auth/register', { email, password, displayName: fullName.trim() });
       const nextPath = response?.user?.studioStatus === 'ONBOARDING' ? '/onboarding' : '/dashboard';
       router.push(nextPath);
       router.refresh();
@@ -58,7 +65,31 @@ export default function RegisterPage() {
                 </p>
               </div>
 
+              {googleEnabled && (
+                <div className="space-y-3">
+                  <Button asChild variant="outline" className="w-full">
+                    <a href="/api/auth/google">Continue with Google</a>
+                  </Button>
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    <span className="h-px flex-1 bg-border/70" />
+                    or
+                    <span className="h-px flex-1 bg-border/70" />
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full name</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    placeholder="Boluwatife Omotoyinbo"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input

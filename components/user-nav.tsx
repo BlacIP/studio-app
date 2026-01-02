@@ -35,9 +35,14 @@ export function UserNav() {
 
   if (!mounted || !user) return null; // Avoid hydration mismatch
 
-  const initials = user.name
-    ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-    : user.email.substring(0, 2).toUpperCase();
+  const displayName = user.displayName || user.name || user.email;
+  const initialsSource = displayName || user.email;
+  const initials = initialsSource
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <DropdownMenu.Root>
@@ -48,7 +53,7 @@ export function UserNav() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-strong-950 truncate">
-              {user.name || 'Studio Owner'}
+              {displayName}
             </p>
             <p className="text-xs text-text-sub-600 truncate">{user.email}</p>
           </div>

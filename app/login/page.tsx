@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +14,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  const oauthError = searchParams.get('error');
+  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
+
+  const oauthErrorMessage = (code: string | null) => {
+    if (!code) return '';
+    switch (code) {
+      case 'use_password':
+        return 'This email is registered with a password. Please sign in with your password.';
+      case 'google_email':
+        return 'Google account email is not verified. Please verify your email first.';
+      case 'google_state':
+      case 'google_token':
+      case 'google_userinfo':
+      case 'google_error':
+        return 'Google sign-in failed. Please try again.';
+      default:
+        return 'Unable to complete Google sign-in.';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +57,9 @@ export default function LoginPage() {
     }
   };
 
+  const oauthMessage = oauthErrorMessage(oauthError);
+  const errorMessage = error || oauthMessage;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/50 flex items-center justify-center px-4 py-10">
       <div className="grid w-full max-w-5xl gap-8 md:grid-cols-2 items-center">
@@ -49,6 +73,19 @@ export default function LoginPage() {
                   Sign in to manage client galleries, uploads, and settings.
                 </p>
               </div>
+
+              {googleEnabled && (
+                <div className="space-y-3">
+                  <Button asChild variant="outline" className="w-full">
+                    <a href="/api/auth/google">Continue with Google</a>
+                  </Button>
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    <span className="h-px flex-1 bg-border/70" />
+                    or
+                    <span className="h-px flex-1 bg-border/70" />
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -83,9 +120,9 @@ export default function LoginPage() {
                   />
                 </div>
 
-                {error && (
+                {errorMessage && (
                   <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {error}
+                    {errorMessage}
                   </div>
                 )}
 
