@@ -1,7 +1,7 @@
 'use client';
 
-import AdminLayout from '../admin/layout';
+import StudioShell from '@/components/studio-shell';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <AdminLayout>{children}</AdminLayout>;
+  return <StudioShell>{children}</StudioShell>;
 }

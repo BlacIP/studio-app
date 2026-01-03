@@ -12,7 +12,6 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/register') ||
     path.startsWith('/dashboard') ||
     path.startsWith('/onboarding') ||
-    path.startsWith('/admin') ||
     path.startsWith('/settings');
 
   if (customDomain && hostname.endsWith(`.${customDomain}`)) {
@@ -26,7 +25,6 @@ export async function middleware(request: NextRequest) {
 
   // Protect authenticated studio routes
   if (
-    path.startsWith('/admin') ||
     path.startsWith('/dashboard') ||
     path.startsWith('/onboarding') ||
     path.startsWith('/settings')

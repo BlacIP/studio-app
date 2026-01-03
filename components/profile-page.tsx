@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RiUserLine, RiLockPasswordLine, RiLoader4Line, RiCheckLine, RiEdit2Line } from '@remixicon/react';
+import { RiUserLine, RiLockPasswordLine, RiCheckLine, RiEdit2Line } from '@remixicon/react';
 import { api } from '@/lib/api-client';
 import { useSession } from '@/lib/hooks/use-session';
 
@@ -43,7 +43,6 @@ export default function ProfilePage() {
     try {
       await api.put('auth/profile', { firstName, lastName });
       setMessage('Profile updated successfully');
-      // Update local user state
       setUser((prev: any) => ({ ...prev, name: `${firstName} ${lastName}`.trim() }));
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');
@@ -77,16 +76,8 @@ export default function ProfilePage() {
     }
   };
 
-
-
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-
-  // ... (keep existing state/effects)
-
-  // Fetch logic needs to make sure we have email/role/permissions
-  // The fetch('/api/auth/me') return object has them.
-  // I need to ensure `user` state has them.
 
   if (loading) return <div className="p-8">Loading profile...</div>;
 
@@ -115,14 +106,19 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* User Info Card */}
       <div className="bg-bg-white-0 rounded-xl border border-stroke-soft-200 p-6 mb-8">
         <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
           <RiUserLine className="text-primary-base" /> Personal Details
         </h2>
 
         {isEditing ? (
-          <form onSubmit={(e) => { handleUpdateProfile(e); setIsEditing(false); }} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              handleUpdateProfile(e);
+              setIsEditing(false);
+            }}
+            className="space-y-4"
+          >
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-text-sub-600 mb-1">First Name</label>
@@ -143,7 +139,6 @@ export default function ProfilePage() {
                 />
               </div>
             </div>
-            {/* Email Read Only in Edit too? Usually email update requires validation. Let's keep it read-only for now or just display it. */}
             <div>
               <label className="block text-xs font-semibold text-text-sub-600 mb-1">Email</label>
               <div className="text-sm text-text-sub-600 px-3 py-2 bg-bg-weak-50 rounded-lg border border-stroke-soft-200 cursor-not-allowed">
@@ -173,7 +168,9 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-semibold text-text-sub-600 mb-1">Full Name</label>
-                <p className="text-text-strong-950 font-medium">{user.first_name} {user.last_name}</p>
+                <p className="text-text-strong-950 font-medium">
+                  {user.first_name} {user.last_name}
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-text-sub-600 mb-1">Email</label>
@@ -184,12 +181,15 @@ export default function ProfilePage() {
             <div className="border-t border-stroke-soft-200 pt-4">
               <label className="block text-xs font-semibold text-text-sub-600 mb-2">Role & Permissions</label>
               <div className="flex flex-wrap gap-2">
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${user.role === 'SUPER_ADMIN_MAX'
-                  ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                  : user.role === 'SUPER_ADMIN'
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-bg-weak-100 text-text-sub-600'
-                  }`}>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    user.role === 'SUPER_ADMIN_MAX'
+                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                      : user.role === 'SUPER_ADMIN'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-bg-weak-100 text-text-sub-600'
+                  }`}
+                >
                   {user.role === 'SUPER_ADMIN_MAX' ? 'Owner' : user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.role}
                 </span>
                 {(user.role === 'SUPER_ADMIN' || user.role === 'SUPER_ADMIN_MAX') ? (
@@ -209,10 +209,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Change Password - Only show in Edit Mode? Or separate toggle? User said "Edit button before able to edit details". I'll hide this unless isEditing is true, OR make it separate. I'll keep it visible but maybe "Edit" button unlocks it? 
-      Actually, separate card is fine. I'll keep it there but maybe users prefer it hidden. 
-      Let's keep it visible so they know they can change it, but it functions independently as before.
-      */}
       <div className="bg-bg-white-0 rounded-xl border border-stroke-soft-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -229,7 +225,10 @@ export default function ProfilePage() {
         </div>
 
         {isChangingPassword && (
-          <form onSubmit={handleChangePassword} className="space-y-4 max-w-md animate-in fade-in slide-in-from-top-2 duration-200">
+          <form
+            onSubmit={handleChangePassword}
+            className="space-y-4 max-w-md animate-in fade-in slide-in-from-top-2 duration-200"
+          >
             <div>
               <label className="block text-xs font-semibold text-text-sub-600 mb-1">Current Password</label>
               <input
@@ -263,7 +262,12 @@ export default function ProfilePage() {
             <div className="pt-2 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => { setIsChangingPassword(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}
+                onClick={() => {
+                  setIsChangingPassword(false);
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
                 className="px-4 py-2 text-sm font-medium text-text-sub-600 hover:bg-bg-weak-50 rounded-lg"
               >
                 Cancel

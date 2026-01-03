@@ -61,28 +61,31 @@ export default function LoginPage() {
   const errorMessage = error || oauthMessage;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/50 flex items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-5xl gap-8 md:grid-cols-2 items-center">
-        <Card className="shadow-xl border border-border/80">
-          <CardContent className="p-8">
+    <div className="relative min-h-screen bg-bg-weak-50 px-4 py-12">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(255,255,255,0.55),transparent_40%),radial-gradient(circle_at_85%_10%,rgba(120,98,70,0.08),transparent_35%)]" />
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center gap-6 lg:flex-row lg:items-stretch lg:justify-center">
+        <Card className="w-full max-w-md border border-stroke-soft-200 bg-bg-white-0 shadow-lg">
+          <CardContent className="p-7 sm:p-8">
             <div className="flex flex-col gap-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Studio Manager</p>
-                <h1 className="text-2xl font-bold leading-tight">Welcome back</h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs uppercase tracking-[0.2em] text-text-sub-600">Studio Manager</p>
+                <h1 className="text-2xl font-semibold leading-tight text-text-strong-950 sm:text-3xl">
+                  Welcome back
+                </h1>
+                <p className="text-sm text-text-sub-600">
                   Sign in to manage client galleries, uploads, and settings.
                 </p>
               </div>
 
               {googleEnabled && (
                 <div className="space-y-3">
-                  <Button asChild variant="outline" className="w-full">
+                  <Button asChild variant="outline" className="h-11 w-full">
                     <a href="/api/auth/google">Continue with Google</a>
                   </Button>
-                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    <span className="h-px flex-1 bg-border/70" />
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-text-sub-600">
+                    <span className="h-px flex-1 bg-stroke-soft-200" />
                     or
-                    <span className="h-px flex-1 bg-border/70" />
+                    <span className="h-px flex-1 bg-stroke-soft-200" />
                   </div>
                 </div>
               )}
@@ -105,7 +108,7 @@ export default function LoginPage() {
                     <Label htmlFor="password">Password</Label>
                     <a
                       href="#"
-                      className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:underline"
+                      className="ml-auto text-sm text-text-sub-600 underline-offset-4 hover:underline"
                     >
                       Forgot password?
                     </a>
@@ -121,53 +124,56 @@ export default function LoginPage() {
                 </div>
 
                 {errorMessage && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  <div className="rounded-md border border-error-base/30 bg-error-base/10 px-3 py-2 text-sm text-error-base">
                     {errorMessage}
                   </div>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="h-11 w-full" disabled={loading}>
                   {loading ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>
 
-              <div className="text-center text-sm text-muted-foreground">
+              <div className="text-center text-sm text-text-sub-600">
                 New here?{' '}
                 <a className="underline underline-offset-4" href="/register">
                   Create a studio account
                 </a>
               </div>
 
-              <div className="text-center text-sm text-muted-foreground">
-                Having trouble? <a className="underline underline-offset-4" href="mailto:hello@yourstudio.com">Contact support</a>
+              <div className="text-center text-sm text-text-sub-600">
+                Having trouble?{' '}
+                <a className="underline underline-offset-4" href="mailto:hello@yourstudio.com">
+                  Contact support
+                </a>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="relative hidden overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-primary/10 via-primary/5 to-background md:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.06),transparent_30%)]" />
-          <div className="relative h-full px-8 py-10 flex flex-col justify-between text-foreground">
+        <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-stroke-soft-200 bg-bg-white-0/80 p-6 shadow-sm lg:max-w-[18rem] lg:p-7">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(120,98,70,0.14),transparent_55%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.6),transparent_40%)]" />
+          <div className="relative flex h-full flex-col justify-between gap-6 text-text-strong-950">
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Photo Library</p>
-              <h2 className="text-3xl font-semibold leading-tight">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-text-sub-600">Photo Library</p>
+              <h2 className="text-2xl font-semibold leading-snug text-text-strong-950">
                 Curate, deliver, and manage every client gallery in one place.
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-text-sub-600">
                 Upload sets, generate share links, and keep clients in the loop. Built for studios who want speed and polish.
               </p>
             </div>
-            <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="space-y-2 text-sm text-text-sub-600">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary" />
+                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
                 Seamless uploads to Cloudinary
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary" />
+                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
                 Client-safe sharing and access control
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary" />
+                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
                 Real-time storage insights
               </div>
             </div>
