@@ -12,8 +12,12 @@ export default function GalleriesPage() {
   const { data: clients, error: clientsError, isValidating: clientsValidating } = useClients();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const studioSlug = studio?.slug || '';
-  const error = studioError || clientsError ? (studioError || clientsError)?.message || 'Unable to load galleries.' : '';
-  const loading = !clients && !clientsError && clientsValidating;
+  const clientList = clients || [];
+  const hasClients = clientList.length > 0;
+  const errorMessage = (studioError || clientsError)?.message || 'Unable to load galleries.';
+  const loading =
+    (!clients && !clientsError && clientsValidating) ||
+    (!studio && !studioError && studioValidating);
 
   const handleCopy = async (url: string, id: string) => {
     try {
@@ -25,7 +29,7 @@ export default function GalleriesPage() {
     }
   };
 
-  if (loading || (!studio && !studioError && studioValidating)) {
+  if (loading) {
     return <div className="p-8 text-center text-text-sub-600">Loading galleries...</div>;
   }
 
@@ -38,21 +42,24 @@ export default function GalleriesPage() {
         </p>
       </div>
 
-      {error ? (
+      {(studioError || clientsError) && (
         <div className="rounded-lg border border-error-base/30 bg-error-base/10 px-4 py-3 text-sm text-error-base">
-          {error}
+          {errorMessage}
         </div>
-      ) : (clients || []).length === 0 ? (
+      )}
+      {!studioError && !clientsError && !hasClients && (
         <div className="rounded-xl border border-dashed border-stroke-soft-200 bg-bg-white-0 p-12 text-center">
           <h3 className="text-lg font-semibold text-text-strong-950">No galleries yet</h3>
           <p className="mt-1 text-sm text-text-sub-600">
             Create a client to generate the first gallery link.
           </p>
         </div>
-      ) : (
+      )}
+      {!studioError && !clientsError && hasClients && (
         <div className="grid gap-4 lg:grid-cols-2">
-          {(clients || []).map((client) => {
+          {clientList.map((client) => {
             const galleryUrl = studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
+            const canCopy = Boolean(galleryUrl);
             const photoCount = Number(client.photo_count || 0);
             return (
               <div
@@ -82,9 +89,9 @@ export default function GalleriesPage() {
                   </a>
                   <button
                     type="button"
-                    onClick={() => galleryUrl && handleCopy(galleryUrl, client.id)}
+                    onClick={() => canCopy && handleCopy(galleryUrl, client.id)}
                     className="inline-flex items-center gap-1 rounded-lg border border-stroke-soft-200 px-3 py-1.5 text-text-strong-950 hover:bg-bg-weak-50"
-                    disabled={!galleryUrl}
+                    disabled={!canCopy}
                   >
                     <RiLinkM size={16} />
                     {copiedId === client.id ? 'Copied' : 'Copy link'}

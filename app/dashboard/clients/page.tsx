@@ -10,6 +10,9 @@ import { useClients } from '@/lib/hooks/use-clients';
 export default function ClientsPage() {
   const { data: clients, error, isValidating } = useClients();
   const loading = !clients && !error && isValidating;
+  const clientList = clients || [];
+  const hasClients = clientList.length > 0;
+  const errorMessage = error?.message || 'Unable to load clients.';
 
   if (loading) {
     return <div className="p-8 text-center text-text-sub-600">Loading clients...</div>;
@@ -29,11 +32,12 @@ export default function ClientsPage() {
         />
       </div>
 
-      {error ? (
+      {error && (
         <div className="rounded-lg border border-error-base/30 bg-error-base/10 px-4 py-3 text-sm text-error-base">
-          {error.message || 'Unable to load clients.'}
+          {errorMessage}
         </div>
-      ) : (clients || []).length === 0 ? (
+      )}
+      {!error && !hasClients && (
         <div className="rounded-2xl border border-dashed border-stroke-soft-200 bg-bg-white-0 p-12 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bg-weak-50 text-text-sub-600">
             <RiUser3Line />
@@ -46,9 +50,10 @@ export default function ClientsPage() {
             <Link href="/dashboard/clients/new">Create Client</Link>
           </Button>
         </div>
-      ) : (
+      )}
+      {!error && hasClients && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(clients || []).map((client) => {
+          {clientList.map((client) => {
             const photoCount = Number(client.photo_count || 0);
             return (
               <Link

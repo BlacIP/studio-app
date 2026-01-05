@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/utils/cn';
 import { uploadStudioLogo } from '@/lib/logo-upload';
 import { buildStudioBaseUrl } from '@/lib/studio-url';
 import { useStudio } from '@/lib/hooks/use-studio';
@@ -22,6 +23,15 @@ function compactRecord(record: Record<string, string>) {
   return Object.fromEntries(entries);
 }
 
+const settingsTabs = [
+  { id: 'studio', label: 'Studio settings' },
+  { id: 'profile', label: 'My profile' },
+  { id: 'archive', label: 'Archive' },
+  { id: 'recycle', label: 'Recycle Bin' },
+] as const;
+
+type SettingsTab = (typeof settingsTabs)[number]['id'];
+
 export default function StudioSettingsPage() {
   const router = useRouter();
   const { data: session, error: sessionError, mutate: mutateSession } = useSession();
@@ -29,7 +39,7 @@ export default function StudioSettingsPage() {
   const [loading, setLoading] = useState(false);
   const didInit = useRef(false);
   const ownerDidInit = useRef(false);
-  const [activeTab, setActiveTab] = useState<'studio' | 'profile' | 'archive' | 'recycle'>('studio');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('studio');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -48,6 +58,29 @@ export default function StudioSettingsPage() {
   const [error, setError] = useState('');
   const [clients, setClients] = useState<any[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
+  const isStudioTab = activeTab === 'studio';
+  const isProfileTab = activeTab === 'profile';
+  const isArchiveTab = activeTab === 'archive';
+  const isRecycleTab = activeTab === 'recycle';
+  const isLifecycleTab = isArchiveTab || isRecycleTab;
+  const lifecycleTitle = isArchiveTab ? 'Archive' : 'Recycle Bin';
+  const lifecycleDescription = isArchiveTab
+    ? 'Clients in Archive are kept for 30 days before moving to Recycle Bin.'
+    : 'Clients in Recycle Bin are kept for 7 days before permanent deletion.';
+  const lifecycleStatus = isArchiveTab ? 'ARCHIVED' : 'DELETED';
+  const lifecycleDays = isArchiveTab ? 30 : 7;
+  const filteredClients = clients.filter((client) => client.status === lifecycleStatus);
+  const showEmptyClients = !loadingClients && filteredClients.length === 0;
+  const publicProfileUrl = slug ? buildStudioBaseUrl(slug) : '';
+  const tabBaseClass =
+    'flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-full transition-colors';
+  const tabClass = (tab: SettingsTab) =>
+    cn(
+      tabBaseClass,
+      activeTab === tab
+        ? 'bg-bg-white-0 text-text-strong-950 shadow-sm ring-1 ring-stroke-soft-200'
+        : 'text-text-sub-600 hover:text-text-strong-950'
+    );
 
   useEffect(() => {
     if (studioError) {
@@ -77,7 +110,7 @@ export default function StudioSettingsPage() {
   }, [session, sessionError]);
 
   useEffect(() => {
-    if (activeTab === 'archive' || activeTab === 'recycle') {
+    if (isLifecycleTab) {
       fetchClients();
     }
   }, [activeTab]);
@@ -248,52 +281,21 @@ export default function StudioSettingsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 rounded-full bg-bg-weak-50 p-1 w-full sm:w-fit">
-            <button
-              onClick={() => setActiveTab('studio')}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeTab === 'studio'
-                ? 'bg-bg-white-0 text-text-strong-950 shadow-sm ring-1 ring-stroke-soft-200'
-                : 'text-text-sub-600 hover:text-text-strong-950'
-                }`}
-            >
-              Studio settings
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeTab === 'profile'
-                ? 'bg-bg-white-0 text-text-strong-950 shadow-sm ring-1 ring-stroke-soft-200'
-                : 'text-text-sub-600 hover:text-text-strong-950'
-                }`}
-            >
-              My profile
-            </button>
-            <button
-              onClick={() => setActiveTab('archive')}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeTab === 'archive'
-                ? 'bg-bg-white-0 text-text-strong-950 shadow-sm ring-1 ring-stroke-soft-200'
-                : 'text-text-sub-600 hover:text-text-strong-950'
-                }`}
-            >
-              Archive
-            </button>
-            <button
-              onClick={() => setActiveTab('recycle')}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeTab === 'recycle'
-                ? 'bg-bg-white-0 text-text-strong-950 shadow-sm ring-1 ring-stroke-soft-200'
-                : 'text-text-sub-600 hover:text-text-strong-950'
-                }`}
-            >
-              Recycle Bin
-            </button>
+            {settingsTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={tabClass(tab.id)}>
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {activeTab === 'profile' && (
+        {isProfileTab && (
           <div className="animate-in fade-in slide-in-from-left-4 duration-300">
             <ProfilePage />
           </div>
         )}
 
-        {activeTab === 'studio' && (
+        {isStudioTab && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <Card className="border border-stroke-soft-200 bg-bg-white-0 shadow-sm">
               <CardHeader className="flex flex-col gap-3 border-b border-stroke-soft-200 px-6 py-5 md:flex-row md:items-start md:justify-between">
@@ -303,9 +305,9 @@ export default function StudioSettingsPage() {
                     Keep your studio details current across every gallery page.
                   </CardDescription>
                 </div>
-                {slug && (
+                {publicProfileUrl && (
                   <Button variant="outline" asChild>
-                    <a href={buildStudioBaseUrl(slug)} target="_blank" rel="noreferrer">
+                    <a href={publicProfileUrl} target="_blank" rel="noreferrer">
                       View public profile
                     </a>
                   </Button>
@@ -448,18 +450,16 @@ export default function StudioSettingsPage() {
           </div>
         )}
 
-        {(activeTab === 'archive' || activeTab === 'recycle') && (
+        {isLifecycleTab && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="rounded-2xl border border-stroke-soft-200 bg-bg-white-0 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stroke-soft-200 px-6 py-4">
                 <div>
                   <h2 className="text-lg font-semibold text-text-strong-950">
-                    {activeTab === 'archive' ? 'Archive' : 'Recycle Bin'}
+                    {lifecycleTitle}
                   </h2>
                   <p className="mt-1 text-sm text-text-sub-600">
-                    {activeTab === 'archive'
-                      ? 'Clients in Archive are kept for 30 days before moving to Recycle Bin.'
-                      : 'Clients in Recycle Bin are kept for 7 days before permanent deletion.'}
+                    {lifecycleDescription}
                   </p>
                 </div>
                 <button
@@ -489,62 +489,49 @@ export default function StudioSettingsPage() {
                       </tr>
                     )}
                     {!loadingClients &&
-                      clients
-                        .filter(
-                          (client) =>
-                            client.status === (activeTab === 'archive' ? 'ARCHIVED' : 'DELETED')
-                        )
-                        .map((client) => (
-                          <tr key={client.id}>
-                            <td className="px-6 py-3 font-medium text-text-strong-950">{client.name}</td>
-                            <td className="px-6 py-3 text-text-sub-600">
-                              {new Date(client.statusUpdatedAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-3 text-text-sub-600">
-                              {calculateDaysLeft(
-                                client.statusUpdatedAt,
-                                activeTab === 'archive' ? 30 : 7
-                              )}{' '}
-                              Days
-                            </td>
-                            <td className="px-6 py-3 text-right">
-                              <div className="flex justify-end gap-2">
+                      filteredClients.map((client) => (
+                        <tr key={client.id}>
+                          <td className="px-6 py-3 font-medium text-text-strong-950">{client.name}</td>
+                          <td className="px-6 py-3 text-text-sub-600">
+                            {new Date(client.statusUpdatedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-3 text-text-sub-600">
+                            {calculateDaysLeft(client.statusUpdatedAt, lifecycleDays)} Days
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => updateClientStatus(client.id, 'ACTIVE')}
+                                className="rounded-full border border-stroke-soft-200 bg-bg-weak-50 px-3 py-1.5 text-xs font-semibold text-text-strong-950 hover:bg-bg-weak-100"
+                              >
+                                Restore
+                              </button>
+                              {isArchiveTab ? (
                                 <button
-                                  onClick={() => updateClientStatus(client.id, 'ACTIVE')}
-                                  className="rounded-full border border-stroke-soft-200 bg-bg-weak-50 px-3 py-1.5 text-xs font-semibold text-text-strong-950 hover:bg-bg-weak-100"
+                                  onClick={() => updateClientStatus(client.id, 'DELETED')}
+                                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-error-base hover:bg-error-weak/10"
                                 >
-                                  Restore
+                                  Move to Bin
                                 </button>
-                                {activeTab === 'archive' ? (
-                                  <button
-                                    onClick={() => updateClientStatus(client.id, 'DELETED')}
-                                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-error-base hover:bg-error-weak/10"
-                                  >
-                                    Move to Bin
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => updateClientStatus(client.id, 'DELETED_FOREVER')}
-                                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-error-base hover:bg-error-weak/10"
-                                  >
-                                    Delete Forever
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                    {!loadingClients &&
-                      clients.filter(
-                        (client) =>
-                          client.status === (activeTab === 'archive' ? 'ARCHIVED' : 'DELETED')
-                      ).length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-6 py-8 text-center text-text-sub-600">
-                            No clients in {activeTab === 'archive' ? 'Archive' : 'Recycle Bin'}.
+                              ) : (
+                                <button
+                                  onClick={() => updateClientStatus(client.id, 'DELETED_FOREVER')}
+                                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-error-base hover:bg-error-weak/10"
+                                >
+                                  Delete Forever
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
-                      )}
+                      ))}
+                    {showEmptyClients && (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-text-sub-600">
+                          No clients in {lifecycleTitle}.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

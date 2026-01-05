@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,11 @@ function OnboardingContent() {
   const [xSocial, setXSocial] = useState('');
   const [tiktok, setTiktok] = useState('');
   const [error, setError] = useState('');
+  const trimmedStudioName = studioName.trim();
+  const isStepOne = step === 1;
+  const isStepTwo = step === 2;
+  const currentStep = steps[step - 1];
+  const stepProgress = `${step} / ${steps.length}`;
 
   useEffect(() => {
     if (studioError) {
@@ -73,11 +78,9 @@ function OnboardingContent() {
     setTiktok(studio.social_links?.tiktok || '');
   }, [router, studio, studioError]);
 
-  const progress = useMemo(() => `${step} / ${steps.length}`, [step]);
-
   const handleNext = () => {
     setError('');
-    if (!studioName.trim()) {
+    if (!trimmedStudioName) {
       setError('Studio name is required.');
       return;
     }
@@ -88,14 +91,14 @@ function OnboardingContent() {
     setLoading(true);
     setError('');
     try {
-      if (!studioName.trim()) {
+      if (!trimmedStudioName) {
         setError('Studio name is required.');
         setLoading(false);
         return;
       }
 
       const payload: Record<string, any> = {
-        name: studioName.trim(),
+        name: trimmedStudioName,
       };
 
       if (!skipOptional) {
@@ -138,11 +141,11 @@ function OnboardingContent() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{steps[step - 1].title}</span>
-              <span>{progress}</span>
+              <span>{currentStep.title}</span>
+              <span>{stepProgress}</span>
             </div>
 
-            {step === 1 && (
+            {isStepOne && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="studioName">Studio name</Label>
@@ -157,7 +160,7 @@ function OnboardingContent() {
               </div>
             )}
 
-            {step === 2 && (
+            {isStepTwo && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="logoUpload">Studio logo (PNG)</Label>
@@ -271,7 +274,7 @@ function OnboardingContent() {
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              {step === 1 ? (
+              {isStepOne ? (
                 <Button type="button" onClick={handleNext}>
                   Continue
                 </Button>
@@ -304,7 +307,9 @@ function OnboardingContent() {
           <div className="space-y-2">
             {steps.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
-                <span className={`h-2 w-2 rounded-full ${step >= item.id ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                <span
+                  className={`h-2 w-2 rounded-full ${step >= item.id ? 'bg-primary' : 'bg-muted-foreground/40'}`}
+                />
                 <span>{item.title}</span>
               </div>
             ))}

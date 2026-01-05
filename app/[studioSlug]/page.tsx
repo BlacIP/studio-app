@@ -73,6 +73,14 @@ export default function StudioHomePage({ params }: PageProps) {
   }
 
   const socials = studio.social_links || {};
+  const hasGalleries = galleries.length > 0;
+  const studioInitials = studio.name.slice(0, 2).toUpperCase();
+  const socialLinks = [
+    { label: 'Instagram', href: socials.instagram },
+    { label: 'Facebook', href: socials.facebook },
+    { label: 'X (Twitter)', href: socials.x },
+    { label: 'TikTok', href: socials.tiktok },
+  ].filter((item) => item.href);
 
   return (
     <div className="min-h-screen bg-bg-weak-50 text-text-strong-950">
@@ -88,7 +96,7 @@ export default function StudioHomePage({ params }: PageProps) {
               />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-weak-100 text-sm font-semibold">
-                {studio.name.slice(0, 2).toUpperCase()}
+                {studioInitials}
               </div>
             )}
             <div>
@@ -118,7 +126,7 @@ export default function StudioHomePage({ params }: PageProps) {
                 Recent galleries
               </h3>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                {galleries.length === 0 && (
+                {!hasGalleries && (
                   <div className="rounded-xl border border-stroke-soft-200 bg-bg-weak-50 p-4 text-sm text-text-sub-600">
                     No galleries yet.
                   </div>
@@ -161,26 +169,11 @@ export default function StudioHomePage({ params }: PageProps) {
             <div className="mt-4 space-y-2 text-sm text-text-sub-600">
               {studio.contact_email && <p>{studio.contact_email}</p>}
               {studio.contact_phone && <p>{studio.contact_phone}</p>}
-              {socials.instagram && (
-                <a className="block underline underline-offset-4" href={socials.instagram}>
-                  Instagram
+              {socialLinks.map((link) => (
+                <a key={link.label} className="block underline underline-offset-4" href={link.href}>
+                  {link.label}
                 </a>
-              )}
-              {socials.facebook && (
-                <a className="block underline underline-offset-4" href={socials.facebook}>
-                  Facebook
-                </a>
-              )}
-              {socials.x && (
-                <a className="block underline underline-offset-4" href={socials.x}>
-                  X (Twitter)
-                </a>
-              )}
-              {socials.tiktok && (
-                <a className="block underline underline-offset-4" href={socials.tiktok}>
-                  TikTok
-                </a>
-              )}
+              ))}
             </div>
           </aside>
         </div>

@@ -17,6 +17,11 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
+  const promoBullets = [
+    'Secure studio login with future Google SSO',
+    'Client-ready share links from day one',
+    'Upload and organize galleries fast',
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,18 +168,12 @@ export default function RegisterPage() {
               </p>
             </div>
             <div className="space-y-2 text-sm text-text-sub-600">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
-                Secure studio login with future Google SSO
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
-                Client-ready share links from day one
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
-                Upload and organize galleries fast
-              </div>
+              {promoBullets.map((bullet) => (
+                <div key={bullet} className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-primary-base/80" />
+                  {bullet}
+                </div>
+              ))}
             </div>
           </div>
         </div>

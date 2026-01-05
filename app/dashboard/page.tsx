@@ -99,15 +99,16 @@ export default function Page() {
     setStudioSlug(studio.slug || "")
   }, [router, studio, studioError])
 
-  if (!studio && isValidating) {
+  const showLoading = !studio && isValidating
+  const publicUrl = studioSlug ? buildStudioBaseUrl(studioSlug) : ""
+
+  if (showLoading) {
     return (
       <div className="px-6 py-10 text-sm text-text-sub-600">
         Loading your studio workspace...
       </div>
     )
   }
-
-  const publicUrl = studioSlug ? buildStudioBaseUrl(studioSlug) : ""
 
   return (
     <div className="space-y-8">
@@ -124,13 +125,13 @@ export default function Page() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {publicUrl ? (
+          {publicUrl && (
             <Button asChild variant="outline">
               <a href={publicUrl} target="_blank" rel="noreferrer">
                 View public studio
               </a>
             </Button>
-          ) : null}
+          )}
           <Button>Create new project</Button>
         </div>
       </section>

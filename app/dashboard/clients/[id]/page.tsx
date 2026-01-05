@@ -358,11 +358,25 @@ export default function ClientDetailPage() {
         return url;
     };
 
-    if (isLoading && !client) return <div className="p-8 text-center">Loading...</div>;
-    if (error && !client) return <div className="p-8 text-center">Failed to load client.</div>;
+    const isInitialLoading = isLoading && !client;
+    const isLoadError = error && !client;
+
+    if (isInitialLoading) return <div className="p-8 text-center">Loading...</div>;
+    if (isLoadError) return <div className="p-8 text-center">Failed to load client.</div>;
     if (!client) return <div className="p-8 text-center">Client not found.</div>;
 
-    const publicUrl = client && studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
+    const publicUrl = studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
+    const canCopyLink = Boolean(publicUrl);
+    const statusLabel = client.status || 'ACTIVE';
+    const statusClassMap: Record<string, string> = {
+        ARCHIVED: 'bg-orange-100 text-orange-700 border-orange-200',
+        DELETED: 'bg-red-100 text-red-700 border-red-200',
+        ACTIVE: 'bg-green-100 text-green-700 border-green-200',
+    };
+    const statusClass = statusClassMap[statusLabel] || statusClassMap.ACTIVE;
+    const hasValidDate = client.event_date && !isNaN(new Date(client.event_date).getTime());
+    const eventDateLabel = hasValidDate ? format(new Date(client.event_date), 'PPP') : 'Date not set';
+    const photoCount = client.photos.length;
 
     return (
         <div>
@@ -446,11 +460,8 @@ export default function ClientDetailPage() {
 
                     <div className="flex items-center gap-2">
                         {/* Status Badge */}
-                        <span className={`px-2 py-1 rounded text-xs font-medium border ${client.status === 'ARCHIVED' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-                            client.status === 'DELETED' ? 'bg-red-100 text-red-700 border-red-200' :
-                                'bg-green-100 text-green-700 border-green-200'
-                            }`}>
-                            {client.status || 'ACTIVE'}
+                        <span className={`px-2 py-1 rounded text-xs font-medium border ${statusClass}`}>
+                            {statusLabel}
                         </span>
                     </div>
                 </div>
@@ -460,9 +471,7 @@ export default function ClientDetailPage() {
                         <h2 className="text-title-h3 font-bold text-text-strong-950">{client.name}</h2>
                         {client.subheading && <p className="text-lg text-text-sub-600 whitespace-pre-wrap">{client.subheading}</p>}
                         <p className="text-text-sub-600 mt-1">
-                            {client.event_date && !isNaN(new Date(client.event_date).getTime())
-                                ? format(new Date(client.event_date), 'PPP')
-                                : 'Date not set'} • {client.photos.length} Photos
+                            {eventDateLabel} • {photoCount} Photos
                         </p>
 
                         {/* Link Display */}
@@ -476,7 +485,7 @@ export default function ClientDetailPage() {
                                 onClick={() => copyLink(publicUrl)}
                                 className="p-2 hover:bg-bg-weak-50 rounded-lg text-text-sub-600 transition-colors"
                                 title="Copy Link"
-                                disabled={!publicUrl}
+                                disabled={!canCopyLink}
                             >
                                 {copied ? <RiCheckLine size={20} className="text-primary-base" /> : <RiShareBoxLine size={20} />}
                             </button>

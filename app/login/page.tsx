@@ -59,6 +59,11 @@ function LoginPageContent() {
 
   const oauthMessage = oauthErrorMessage(oauthError);
   const errorMessage = error || oauthMessage;
+  const promoBullets = [
+    'Seamless uploads to Cloudinary',
+    'Client-safe sharing and access control',
+    'Real-time storage insights',
+  ];
 
   return (
     <div className="relative min-h-screen bg-bg-weak-50 px-4 py-12">
@@ -164,18 +169,12 @@ function LoginPageContent() {
               </p>
             </div>
             <div className="space-y-2 text-sm text-text-sub-600">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
-                Seamless uploads to Cloudinary
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
-                Client-safe sharing and access control
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary-base/80" />
-                Real-time storage insights
-              </div>
+              {promoBullets.map((bullet) => (
+                <div key={bullet} className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-primary-base/80" />
+                  {bullet}
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -21,6 +21,36 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const labelClass = 'block text-xs font-semibold text-text-sub-600 mb-1';
+  const inputClass = 'w-full rounded-lg border border-stroke-soft-200 px-3 py-2 text-sm';
+  const cardClass = 'bg-bg-white-0 rounded-xl border border-stroke-soft-200 p-6';
+  const pillClass =
+    'bg-bg-weak-100 px-2 py-1 rounded-full text-xs text-text-strong-950 border border-stroke-soft-200';
+  const role = user?.role || '';
+  const roleLabelMap: Record<string, string> = {
+    SUPER_ADMIN_MAX: 'Owner',
+    SUPER_ADMIN: 'Super Admin',
+  };
+  const roleStyleMap: Record<string, string> = {
+    SUPER_ADMIN_MAX: 'bg-amber-100 text-amber-700 border border-amber-200',
+    SUPER_ADMIN: 'bg-purple-100 text-purple-700',
+  };
+  const roleLabel = roleLabelMap[role] || role;
+  const roleBadgeClass = roleStyleMap[role] || 'bg-bg-weak-100 text-text-sub-600';
+  const isElevatedRole = role === 'SUPER_ADMIN' || role === 'SUPER_ADMIN_MAX';
+  const permissionBadges = isElevatedRole
+    ? [
+        {
+          label: role === 'SUPER_ADMIN_MAX' ? 'System Owner' : 'Full System Access',
+        },
+      ]
+    : (user?.permissions || []).map((permission: string) => ({
+        label: permission.replace('_', ' '),
+      }));
+
   useEffect(() => {
     if (sessionError) {
       setLoading(false);
@@ -76,8 +106,10 @@ export default function ProfilePage() {
     }
   };
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const handleProfileSubmit = (event: React.FormEvent) => {
+    handleUpdateProfile(event);
+    setIsEditing(false);
+  };
 
   if (loading) return <div className="p-8">Loading profile...</div>;
 
@@ -106,41 +138,38 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="bg-bg-white-0 rounded-xl border border-stroke-soft-200 p-6 mb-8">
+      <div className={`${cardClass} mb-8`}>
         <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
           <RiUserLine className="text-primary-base" /> Personal Details
         </h2>
 
         {isEditing ? (
           <form
-            onSubmit={(e) => {
-              handleUpdateProfile(e);
-              setIsEditing(false);
-            }}
+            onSubmit={handleProfileSubmit}
             className="space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-text-sub-600 mb-1">First Name</label>
+                <label className={labelClass}>First Name</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-lg border border-stroke-soft-200 px-3 py-2 text-sm"
+                  className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-sub-600 mb-1">Last Name</label>
+                <label className={labelClass}>Last Name</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-lg border border-stroke-soft-200 px-3 py-2 text-sm"
+                  className={inputClass}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-sub-600 mb-1">Email</label>
+              <label className={labelClass}>Email</label>
               <div className="text-sm text-text-sub-600 px-3 py-2 bg-bg-weak-50 rounded-lg border border-stroke-soft-200 cursor-not-allowed">
                 {user.email}
               </div>
@@ -167,13 +196,13 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-semibold text-text-sub-600 mb-1">Full Name</label>
+                <label className={labelClass}>Full Name</label>
                 <p className="text-text-strong-950 font-medium">
                   {user.first_name} {user.last_name}
                 </p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-sub-600 mb-1">Email</label>
+                <label className={labelClass}>Email</label>
                 <p className="text-text-strong-950 font-medium">{user.email}</p>
               </div>
             </div>
@@ -182,34 +211,22 @@ export default function ProfilePage() {
               <label className="block text-xs font-semibold text-text-sub-600 mb-2">Role & Permissions</label>
               <div className="flex flex-wrap gap-2">
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    user.role === 'SUPER_ADMIN_MAX'
-                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                      : user.role === 'SUPER_ADMIN'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-bg-weak-100 text-text-sub-600'
-                  }`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${roleBadgeClass}`}
                 >
-                  {user.role === 'SUPER_ADMIN_MAX' ? 'Owner' : user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.role}
+                  {roleLabel}
                 </span>
-                {(user.role === 'SUPER_ADMIN' || user.role === 'SUPER_ADMIN_MAX') ? (
-                  <span className="bg-bg-weak-100 px-2 py-1 rounded-full text-xs text-text-strong-950 border border-stroke-soft-200">
-                    {user.role === 'SUPER_ADMIN_MAX' ? 'System Owner' : 'Full System Access'}
+                {permissionBadges.map((badge) => (
+                  <span key={badge.label} className={pillClass}>
+                    {badge.label}
                   </span>
-                ) : (
-                  user.permissions?.map((p: string) => (
-                    <span key={p} className="bg-bg-weak-100 px-2 py-1 rounded-full text-xs text-text-strong-950 border border-stroke-soft-200">
-                      {p.replace('_', ' ')}
-                    </span>
-                  ))
-                )}
+                ))}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="bg-bg-white-0 rounded-xl border border-stroke-soft-200 p-6">
+      <div className={cardClass}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <RiLockPasswordLine className="text-primary-base" /> Change Password
@@ -230,33 +247,33 @@ export default function ProfilePage() {
             className="space-y-4 max-w-md animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <div>
-              <label className="block text-xs font-semibold text-text-sub-600 mb-1">Current Password</label>
+              <label className={labelClass}>Current Password</label>
               <input
                 type="password"
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-lg border border-stroke-soft-200 px-3 py-2 text-sm"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-sub-600 mb-1">New Password</label>
+              <label className={labelClass}>New Password</label>
               <input
                 type="password"
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-lg border border-stroke-soft-200 px-3 py-2 text-sm"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-sub-600 mb-1">Confirm New Password</label>
+              <label className={labelClass}>Confirm New Password</label>
               <input
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-lg border border-stroke-soft-200 px-3 py-2 text-sm"
+                className={inputClass}
               />
             </div>
             <div className="pt-2 flex justify-end gap-3">
