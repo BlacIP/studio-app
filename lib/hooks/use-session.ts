@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import useSWR from 'swr';
 
 export type SessionUser = {
@@ -62,12 +62,23 @@ type UseSessionOptions = {
 
 export function useSession(options: UseSessionOptions = {}) {
   const { requireFresh = false } = options;
-  const [fallback] = useState<SessionUser | undefined>(() => readSessionCache() ?? undefined);
-
   const swr = useSWR<SessionUser>('auth/me', {
-    fallbackData: fallback,
-    revalidateOnMount: requireFresh || !fallback,
+    revalidateOnMount: requireFresh,
   });
+  const { mutate } = swr;
+
+  useEffect(() => {
+    const cached = readSessionCache();
+    if (cached) {
+      mutate(cached, false);
+      if (requireFresh) {
+        mutate();
+      }
+      return;
+    }
+
+    mutate();
+  }, [mutate, requireFresh]);
 
   useEffect(() => {
     if (swr.data) {

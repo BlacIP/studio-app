@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -49,9 +50,10 @@ function LoginPageContent() {
       const nextPath = response?.user?.studioStatus === 'ONBOARDING' ? '/onboarding' : '/dashboard';
       router.push(nextPath);
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'An error occurred. Please try again.');
+      const message = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,9 @@ function LoginPageContent() {
               {googleEnabled && (
                 <div className="space-y-3">
                   <Button asChild variant="outline" className="h-11 w-full">
-                    <a href="/api/auth/google">Continue with Google</a>
+                    <Link href="/api/auth/google" prefetch={false}>
+                      Continue with Google
+                    </Link>
                   </Button>
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-text-sub-600">
                     <span className="h-px flex-1 bg-stroke-soft-200" />
@@ -141,9 +145,9 @@ function LoginPageContent() {
 
               <div className="text-center text-sm text-text-sub-600">
                 New here?{' '}
-                <a className="underline underline-offset-4" href="/register">
+                <Link className="underline underline-offset-4" href="/register">
                   Create a studio account
-                </a>
+                </Link>
               </div>
 
               <div className="text-center text-sm text-text-sub-600">

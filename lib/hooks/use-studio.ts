@@ -89,25 +89,33 @@ export function clearStudioCache() {
 
 export function useStudio() {
   const { data: session } = useSession();
-  const currentStudioId = session?.studioId ?? readSessionStudioId();
-  const initialFallback = readStudioCache(currentStudioId) ?? undefined;
-  const [fallback, setFallback] = useState<Studio | undefined>(initialFallback);
+  const [studioId, setStudioId] = useState<string | null>(session?.studioId ?? null);
 
   useEffect(() => {
-    const cached = readStudioCache(currentStudioId ?? null);
-    setFallback(cached ?? undefined);
-  }, [currentStudioId]);
+    const resolvedId = session?.studioId ?? readSessionStudioId();
+    setStudioId(resolvedId);
+  }, [session?.studioId]);
 
-  const swr = useSWR<Studio>(currentStudioId ? 'studios/me' : null, {
-    fallbackData: fallback,
-    revalidateOnMount: !fallback,
+  const swr = useSWR<Studio>(studioId ? 'studios/me' : null, {
+    revalidateOnMount: false,
   });
+  const { mutate } = swr;
+
+  useEffect(() => {
+    if (!studioId) return;
+    const cached = readStudioCache(studioId);
+    if (cached) {
+      mutate(cached, false);
+      return;
+    }
+    mutate();
+  }, [mutate, studioId]);
 
   useEffect(() => {
     if (swr.data) {
-      writeStudioCache(swr.data, currentStudioId ?? null);
+      writeStudioCache(swr.data, studioId ?? null);
     }
-  }, [currentStudioId, swr.data]);
+  }, [studioId, swr.data]);
 
   return swr;
 }

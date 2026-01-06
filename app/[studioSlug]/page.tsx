@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api-client';
 import { buildStudioGalleryUrl } from '@/lib/studio-url';
@@ -44,9 +45,10 @@ export default function StudioHomePage({ params }: PageProps) {
         if (!cancelled) setStudio(data);
         const galleryData = (await api.get(`studios/public/${studioSlug}/clients`)) as StudioGallery[];
         if (!cancelled) setGalleries(galleryData);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
-        if (!cancelled) setError(err.message || 'Unable to load studio.');
+        const message = err instanceof Error ? err.message : 'Unable to load studio.';
+        if (!cancelled) setError(message);
       }
     })();
 
@@ -88,10 +90,11 @@ export default function StudioHomePage({ params }: PageProps) {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             {studio.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={studio.logo_url}
                 alt={`${studio.name} logo`}
+                width={40}
+                height={40}
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
@@ -137,13 +140,14 @@ export default function StudioHomePage({ params }: PageProps) {
                     href={buildStudioGalleryUrl(studio.slug, gallery.slug)}
                     className="group overflow-hidden rounded-xl border border-stroke-soft-200 bg-bg-white-0 transition hover:border-text-sub-600"
                   >
-                    <div className="h-32 w-full bg-bg-weak-50">
+                    <div className="relative h-32 w-full bg-bg-weak-50">
                       {gallery.header_media_url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={gallery.header_media_url}
                           alt={gallery.name}
-                          className="h-32 w-full object-cover"
+                          fill
+                          sizes="(min-width: 640px) 50vw, 100vw"
+                          className="object-cover"
                         />
                       )}
                     </div>

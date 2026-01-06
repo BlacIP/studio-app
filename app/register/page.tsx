@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -48,9 +49,10 @@ export default function RegisterPage() {
       const nextPath = response?.user?.studioStatus === 'ONBOARDING' ? '/onboarding' : '/dashboard';
       router.push(nextPath);
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'An error occurred. Please try again.');
+      const message = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,9 @@ export default function RegisterPage() {
               {googleEnabled && (
                 <div className="space-y-3">
                   <Button asChild variant="outline" className="h-11 w-full">
-                    <a href="/api/auth/google">Continue with Google</a>
+                    <Link href="/api/auth/google" prefetch={false}>
+                      Continue with Google
+                    </Link>
                   </Button>
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-text-sub-600">
                     <span className="h-px flex-1 bg-stroke-soft-200" />
@@ -147,9 +151,9 @@ export default function RegisterPage() {
 
               <div className="text-center text-sm text-text-sub-600">
                 Already have an account?{' '}
-                <a className="underline underline-offset-4" href="/login">
+                <Link className="underline underline-offset-4" href="/login">
                   Sign in
-                </a>
+                </Link>
               </div>
             </div>
           </CardContent>
