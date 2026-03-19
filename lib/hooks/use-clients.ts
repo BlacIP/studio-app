@@ -11,6 +11,7 @@ export type StudioClient = {
   event_date: string;
   photo_count?: number | string;
   status?: string;
+  studio_slug?: string | null;
 };
 
 const CLIENTS_CACHE_KEY = 'studio_app_clients_v1';
@@ -21,6 +22,10 @@ type ClientsCachePayload = {
   studioId: string | null;
   data: StudioClient[];
 };
+
+function normalizeClients(data: StudioClient[]) {
+  return data.filter((client) => client.status !== 'DELETED');
+}
 
 function readSessionStudioId(): string | null {
   if (typeof window === 'undefined') return null;
@@ -49,22 +54,22 @@ function readClientsCache(currentStudioId: string | null): StudioClient[] | null
       clearClientsCache();
       return null;
     }
-    clientsCache = payload.data;
+    clientsCache = normalizeClients(payload.data);
     clientsCacheStudioId = payload.studioId ?? currentStudioId;
-    return payload.data;
+    return clientsCache;
   } catch {
     return null;
   }
 }
 
 function writeClientsCache(data: StudioClient[], currentStudioId: string | null) {
-  clientsCache = data;
+  clientsCache = normalizeClients(data);
   clientsCacheStudioId = currentStudioId;
   if (typeof window === 'undefined') return;
   try {
     const payload: ClientsCachePayload = {
       studioId: currentStudioId,
-      data,
+      data: clientsCache,
     };
     window.sessionStorage.setItem(CLIENTS_CACHE_KEY, JSON.stringify(payload));
   } catch {
@@ -83,6 +88,30 @@ export function clearClientsCache() {
   }
 }
 
+export function removeClientFromClientsCache(clientId: string) {
+  if (!clientId) return;
+  const nextData = (clientsCache ?? []).filter((client) => client.id !== clientId);
+  clientsCache = nextData;
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = window.sessionStorage.getItem(CLIENTS_CACHE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as StudioClient[] | ClientsCachePayload;
+    const payload = 'data' in parsed
+      ? (parsed as ClientsCachePayload)
+      : { studioId: clientsCacheStudioId, data: parsed as StudioClient[] };
+    window.sessionStorage.setItem(
+      CLIENTS_CACHE_KEY,
+      JSON.stringify({
+        studioId: payload.studioId ?? clientsCacheStudioId,
+        data: normalizeClients(payload.data).filter((client) => client.id !== clientId),
+      } satisfies ClientsCachePayload)
+    );
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
 export function useClients() {
   const { data: session } = useSession();
   const currentStudioId = session?.studioId ?? readSessionStudioId();
@@ -96,7 +125,7 @@ export function useClients() {
 
   const swr = useSWR<StudioClient[]>(currentStudioId ? 'clients' : null, {
     fallbackData: fallback,
-    revalidateOnMount: !fallback,
+    revalidateOnMount: true,
   });
 
   useEffect(() => {

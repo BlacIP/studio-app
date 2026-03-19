@@ -4,7 +4,6 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { buildStudioGalleryUrl } from '@/lib/studio-url';
-import { useStudio } from '@/lib/hooks/use-studio';
 import type { Client, ClientResponse, LightboxState } from './types';
 import { getEventDateLabel, getStatusClass } from './utils';
 import { useAlerts } from './hooks/use-alerts';
@@ -28,8 +27,6 @@ export default function ClientDetailPage() {
   const { data, error, isLoading, mutate } = useSWR<ClientResponse>(
     id ? `clients/${id}` : null
   );
-  const { data: studio } = useStudio();
-  const studioSlug = studio?.slug || '';
 
   const { alertState, confirmState, showAlert, showConfirm, closeAlert, closeConfirm } = useAlerts();
 
@@ -112,7 +109,7 @@ export default function ClientDetailPage() {
   if (isLoadError) return <div className="p-8 text-center">Failed to load client.</div>;
   if (!client) return <div className="p-8 text-center">Client not found.</div>;
 
-  const publicUrl = studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
+  const publicUrl = client.studio_slug ? buildStudioGalleryUrl(client.studio_slug, client.slug) : '';
   const canCopyLink = Boolean(publicUrl);
   const statusLabel = client.status || 'ACTIVE';
   const statusClass = getStatusClass(statusLabel);

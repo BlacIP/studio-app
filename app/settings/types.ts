@@ -56,3 +56,8 @@ export type LifecycleConfig = {
   status: string;
   days: number;
 };
+
+export type StudioSettingsBootstrap = {
+  user: import('@/lib/hooks/use-session').SessionUser;
+  studio: import('@/lib/hooks/use-studio').Studio;
+};

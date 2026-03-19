@@ -10,6 +10,7 @@ export interface Client {
   name: string;
   event_date: string;
   slug: string;
+  studio_slug?: string | null;
   status: 'ACTIVE' | 'ARCHIVED' | 'DELETED';
   subheading?: string;
   photos: Photo[];

@@ -27,6 +27,11 @@ type StudioGallery = {
   photo_count: number;
 };
 
+type StudioHomeResponse = {
+  studio: StudioPublic;
+  clients: StudioGallery[];
+};
+
 type PageProps = {
   params: { studioSlug: string };
 };
@@ -41,10 +46,10 @@ export default function StudioHomePage({ params }: PageProps) {
     let cancelled = false;
     (async () => {
       try {
-        const data = (await api.get(`studios/public/${studioSlug}`)) as StudioPublic;
-        if (!cancelled) setStudio(data);
-        const galleryData = (await api.get(`studios/public/${studioSlug}/clients`)) as StudioGallery[];
-        if (!cancelled) setGalleries(galleryData);
+        const data = await api.get<StudioHomeResponse>(`studios/public/${studioSlug}/home`);
+        if (cancelled) return;
+        setStudio(data.studio);
+        setGalleries(data.clients);
       } catch (err: unknown) {
         console.error(err);
         const message = err instanceof Error ? err.message : 'Unable to load studio.';

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { api } from '@/lib/api-client';
+import { primeSessionCache } from '@/lib/hooks/use-session';
+import { primeStudioCache } from '@/lib/hooks/use-studio';
 import { uploadStudioLogo } from '@/lib/logo-upload';
 import type { Studio } from '@/lib/hooks/use-studio';
 import type { SessionUser } from '@/lib/hooks/use-session';
-import type { StudioFormSetters, StudioFormState } from '../types';
+import type { StudioFormSetters, StudioFormState, StudioSettingsBootstrap } from '../types';
 import { compactRecord } from '../utils';
 
 type StudioPayload = {
+  displayName?: string;
   name: string;
   slug?: string;
   logo_url?: string;
@@ -24,14 +27,12 @@ export function useStudioSettingsForm({
   studioError,
   session,
   sessionError,
-  mutateSession,
   router,
 }: {
   studio?: Studio | null;
   studioError?: unknown;
   session?: SessionUser | null;
   sessionError?: unknown;
-  mutateSession: (data?: SessionUser | null, shouldRevalidate?: boolean) => void;
   router: AppRouterInstance;
 }) {
   const [loading, setLoading] = useState(false);
@@ -106,14 +107,12 @@ export function useStudioSettingsForm({
       });
       if (socialLinks) payload.social_links = socialLinks;
       const trimmedOwnerName = ownerName.trim();
-      const currentOwnerName = session?.displayName || session?.name || '';
-      if (trimmedOwnerName && trimmedOwnerName !== currentOwnerName) {
-        const userResponse = await api.patch('auth/me', { displayName: trimmedOwnerName });
-        if (userResponse?.user) {
-          mutateSession(userResponse.user, false);
-        }
+      if (trimmedOwnerName) {
+        payload.displayName = trimmedOwnerName;
       }
-      await api.patch('studios/me', payload);
+      const response = await api.patch<StudioSettingsBootstrap>('studios/me/settings', payload);
+      primeSessionCache(response.user);
+      primeStudioCache(response.studio, response.user.studioId ?? response.studio.id);
       setMessage('Studio settings updated.');
     } catch (err: unknown) {
       console.error(err);
@@ -144,7 +143,9 @@ export function useStudioSettingsForm({
       if (contactEmail.trim()) payload.contact_email = contactEmail.trim();
       if (contactPhone.trim()) payload.contact_phone = contactPhone.trim();
       if (address.trim()) payload.address = address.trim();
-      await api.patch('studios/me', payload);
+      const response = await api.patch<StudioSettingsBootstrap>('studios/me/settings', payload);
+      primeSessionCache(response.user);
+      primeStudioCache(response.studio, response.user.studioId ?? response.studio.id);
       setLogoUrl('');
       setLogoPublicId('');
       setMessage('Logo removed.');

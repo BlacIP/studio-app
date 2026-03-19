@@ -3,21 +3,16 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { buildStudioGalleryUrl } from '@/lib/studio-url';
-import { useStudio } from '@/lib/hooks/use-studio';
 import { useClients } from '@/lib/hooks/use-clients';
 import { RiExternalLinkLine, RiImageLine, RiLinkM } from '@remixicon/react';
 
 export default function GalleriesPage() {
-  const { data: studio, error: studioError, isValidating: studioValidating } = useStudio();
   const { data: clients, error: clientsError, isValidating: clientsValidating } = useClients();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const studioSlug = studio?.slug || '';
   const clientList = clients || [];
   const hasClients = clientList.length > 0;
-  const errorMessage = (studioError || clientsError)?.message || 'Unable to load galleries.';
-  const loading =
-    (!clients && !clientsError && clientsValidating) ||
-    (!studio && !studioError && studioValidating);
+  const errorMessage = clientsError?.message || 'Unable to load galleries.';
+  const loading = !clients && !clientsError && clientsValidating;
 
   const handleCopy = async (url: string, id: string) => {
     try {
@@ -42,12 +37,12 @@ export default function GalleriesPage() {
         </p>
       </div>
 
-      {(studioError || clientsError) && (
+      {clientsError && (
         <div className="rounded-lg border border-error-base/30 bg-error-base/10 px-4 py-3 text-sm text-error-base">
           {errorMessage}
         </div>
       )}
-      {!studioError && !clientsError && !hasClients && (
+      {!clientsError && !hasClients && (
         <div className="rounded-xl border border-dashed border-stroke-soft-200 bg-bg-white-0 p-12 text-center">
           <h3 className="text-lg font-semibold text-text-strong-950">No galleries yet</h3>
           <p className="mt-1 text-sm text-text-sub-600">
@@ -55,10 +50,12 @@ export default function GalleriesPage() {
           </p>
         </div>
       )}
-      {!studioError && !clientsError && hasClients && (
+      {!clientsError && hasClients && (
         <div className="grid gap-4 lg:grid-cols-2">
           {clientList.map((client) => {
-            const galleryUrl = studioSlug ? buildStudioGalleryUrl(studioSlug, client.slug) : '';
+            const galleryUrl = client.studio_slug
+              ? buildStudioGalleryUrl(client.studio_slug, client.slug)
+              : '';
             const canCopy = Boolean(galleryUrl);
             const photoCount = Number(client.photo_count || 0);
             return (

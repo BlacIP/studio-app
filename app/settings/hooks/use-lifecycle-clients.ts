@@ -9,7 +9,7 @@ export function useLifecycleClients(active: boolean) {
   const fetchClients = useCallback(async () => {
     setLoadingClients(true);
     try {
-      const data = await api.get('admin/legacy/clients');
+      const data = await api.get<LifecycleClient[]>('clients/lifecycle');
       setClients(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
@@ -32,13 +32,12 @@ export function useLifecycleClients(active: boolean) {
     )
       return;
     try {
-      // TODO: Implement lifecycle endpoint in backend
-      // await api.post('admin/lifecycle/cleanup');
-      // fetchClients();
+      await api.post('clients/lifecycle/cleanup', {});
+      await fetchClients();
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [fetchClients]);
 
   const updateClientStatus = useCallback(
     async (id: string, status: string) => {
@@ -50,8 +49,8 @@ export function useLifecycleClients(active: boolean) {
         )
           return;
         try {
-          await api.delete(`admin/legacy/clients/${id}`);
-          fetchClients();
+          await api.delete(`clients/${id}`);
+          await fetchClients();
         } catch (e) {
           console.error(e);
         }
@@ -59,8 +58,8 @@ export function useLifecycleClients(active: boolean) {
       }
 
       try {
-        await api.put(`admin/legacy/clients/${id}`, { status });
-        fetchClients();
+        await api.put(`clients/${id}`, { status });
+        await fetchClients();
       } catch (e) {
         console.error(e);
       }

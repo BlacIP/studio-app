@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
+import { mutate } from 'swr';
 import { api } from '@/lib/api-client';
+import { removeClientFromClientsCache } from '@/lib/hooks/use-clients';
 import type { Client } from '../types';
 
 export function useClientStatus({
@@ -25,6 +27,10 @@ export function useClientStatus({
         try {
           await api.put(`clients/${clientId}`, { status: newStatus });
           setClient({ ...client, status: newStatus });
+          if (newStatus === 'DELETED') {
+            removeClientFromClientsCache(clientId);
+            await mutate('clients');
+          }
           await onRefresh();
           if (newStatus === 'DELETED') {
             showAlert('Success', 'Client deleted (Soft Delete). Public link is now disabled.');
