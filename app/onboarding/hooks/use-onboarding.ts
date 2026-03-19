@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { mutate } from 'swr';
 import { api } from '@/lib/api-client';
+import { type SessionUser, primeSessionCache } from '@/lib/hooks/use-session';
+import { primeStudioCache } from '@/lib/hooks/use-studio';
 import { uploadStudioLogo } from '@/lib/logo-upload';
 import type { Studio } from '@/lib/hooks/use-studio';
 import type { OnboardingFormState } from '../types';
@@ -117,7 +120,26 @@ export function useOnboarding({
         if (socialLinks) payload.social_links = socialLinks;
       }
 
-      await api.patch('studios/me', payload);
+      const updatedStudio = await api.patch<Studio>('studios/me', payload);
+      primeStudioCache(updatedStudio, updatedStudio.id);
+      mutate('studios/me', updatedStudio, false);
+
+      const currentSession = await mutate<SessionUser>('auth/me', async (existing) => {
+        if (!existing) return existing;
+        const nextSession = {
+          ...existing,
+          studioName: updatedStudio.name ?? existing.studioName,
+          studioSlug: updatedStudio.slug ?? existing.studioSlug,
+          studioStatus: updatedStudio.status,
+        };
+        primeSessionCache(nextSession);
+        return nextSession;
+      }, false);
+
+      if (currentSession) {
+        primeSessionCache(currentSession);
+      }
+
       router.push('/dashboard');
       router.refresh();
     } catch (err: unknown) {

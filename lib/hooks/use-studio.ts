@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import { useSession, SESSION_CACHE_KEY } from '@/lib/hooks/use-session';
+import {
+  getCachedSession,
+  SESSION_CACHE_UPDATED_EVENT,
+} from '@/lib/hooks/use-session';
 
 export type Studio = {
   id: string;
@@ -27,15 +30,7 @@ type StudioCachePayload = {
 };
 
 function readSessionStudioId(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.sessionStorage.getItem(SESSION_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { studioId?: string };
-    return parsed.studioId ?? null;
-  } catch {
-    return null;
-  }
+  return getCachedSession()?.studioId ?? null;
 }
 
 function readStudioCache(currentStudioId: string | null): Studio | null {
@@ -76,6 +71,10 @@ function writeStudioCache(data: Studio, currentStudioId: string | null) {
   }
 }
 
+export function primeStudioCache(data: Studio, currentStudioId?: string | null) {
+  writeStudioCache(data, currentStudioId ?? data.id ?? null);
+}
+
 export function clearStudioCache() {
   studioCache = null;
   studioCacheStudioId = null;
@@ -88,28 +87,29 @@ export function clearStudioCache() {
 }
 
 export function useStudio() {
-  const { data: session } = useSession();
-  const [studioId, setStudioId] = useState<string | null>(session?.studioId ?? null);
+  const [studioId, setStudioId] = useState<string | null>(null);
+  const [fallback, setFallback] = useState<Studio | undefined>(undefined);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const resolvedId = session?.studioId ?? readSessionStudioId();
-    setStudioId(resolvedId);
-  }, [session?.studioId]);
+    const syncFromSession = () => {
+      const nextStudioId = readSessionStudioId();
+      setStudioId(nextStudioId);
+      setFallback(readStudioCache(nextStudioId) ?? undefined);
+      setReady(true);
+    };
 
-  const swr = useSWR<Studio>(studioId ? 'studios/me' : null, {
-    revalidateOnMount: false,
+    syncFromSession();
+    window.addEventListener(SESSION_CACHE_UPDATED_EVENT, syncFromSession);
+    return () => {
+      window.removeEventListener(SESSION_CACHE_UPDATED_EVENT, syncFromSession);
+    };
+  }, []);
+
+  const swr = useSWR<Studio>(ready && studioId ? 'studios/me' : null, {
+    fallbackData: fallback,
+    revalidateOnMount: !fallback,
   });
-  const { mutate } = swr;
-
-  useEffect(() => {
-    if (!studioId) return;
-    const cached = readStudioCache(studioId);
-    if (cached) {
-      mutate(cached, false);
-      return;
-    }
-    mutate();
-  }, [mutate, studioId]);
 
   useEffect(() => {
     if (swr.data) {
@@ -117,5 +117,10 @@ export function useStudio() {
     }
   }, [studioId, swr.data]);
 
-  return swr;
+  return {
+    ...swr,
+    data: swr.data ?? fallback,
+    isLoading: !ready || swr.isLoading,
+    isValidating: !ready || swr.isValidating,
+  };
 }

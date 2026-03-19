@@ -37,6 +37,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(inter.variable, geistMono.variable, 'antialiased')}
     >
+      <head>
+        <script src='https://mcp.figma.com/mcp/html-to-design/capture.js' async />
+      </head>
       <body className='bg-bg-white-0 text-text-strong-950'>
         <ThemeProvider attribute='class' forcedTheme="light" enableSystem={false}>
           <AppProviders>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 
 export type SessionUser = {
@@ -20,7 +20,17 @@ export type SessionUser = {
 };
 
 export const SESSION_CACHE_KEY = 'studio_app_session_v1';
+export const SESSION_CACHE_UPDATED_EVENT = 'studio-app:session-cache-updated';
 let sessionCache: SessionUser | null = null;
+
+function dispatchSessionCacheUpdate(data: SessionUser | null) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<SessionUser | null>(SESSION_CACHE_UPDATED_EVENT, {
+      detail: data,
+    })
+  );
+}
 
 function readSessionCache(): SessionUser | null {
   if (sessionCache) return sessionCache;
@@ -36,6 +46,10 @@ function readSessionCache(): SessionUser | null {
   }
 }
 
+export function getCachedSession(): SessionUser | null {
+  return readSessionCache();
+}
+
 function writeSessionCache(data: SessionUser) {
   sessionCache = data;
   if (typeof window === 'undefined') return;
@@ -44,6 +58,11 @@ function writeSessionCache(data: SessionUser) {
   } catch {
     // Ignore storage errors (private mode, quota).
   }
+  dispatchSessionCacheUpdate(data);
+}
+
+export function primeSessionCache(data: SessionUser) {
+  writeSessionCache(data);
 }
 
 export function clearSessionCache() {
@@ -54,6 +73,7 @@ export function clearSessionCache() {
   } catch {
     // Ignore storage errors.
   }
+  dispatchSessionCacheUpdate(null);
 }
 
 type UseSessionOptions = {
@@ -62,23 +82,18 @@ type UseSessionOptions = {
 
 export function useSession(options: UseSessionOptions = {}) {
   const { requireFresh = false } = options;
-  const swr = useSWR<SessionUser>('auth/me', {
-    revalidateOnMount: requireFresh,
-  });
-  const { mutate } = swr;
+  const [fallback, setFallback] = useState<SessionUser | undefined>(undefined);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const cached = readSessionCache();
-    if (cached) {
-      mutate(cached, false);
-      if (requireFresh) {
-        mutate();
-      }
-      return;
-    }
+    setFallback(readSessionCache() ?? undefined);
+    setReady(true);
+  }, []);
 
-    mutate();
-  }, [mutate, requireFresh]);
+  const swr = useSWR<SessionUser>(ready ? 'auth/me' : null, {
+    fallbackData: fallback,
+    revalidateOnMount: requireFresh || !fallback,
+  });
 
   useEffect(() => {
     if (swr.data) {
@@ -86,5 +101,10 @@ export function useSession(options: UseSessionOptions = {}) {
     }
   }, [swr.data]);
 
-  return swr;
+  return {
+    ...swr,
+    data: swr.data ?? fallback,
+    isLoading: !ready || swr.isLoading,
+    isValidating: !ready || swr.isValidating,
+  };
 }
